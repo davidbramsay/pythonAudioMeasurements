@@ -3,7 +3,7 @@
 
 This is a library designed to make audio measurment and audio data manipulation easier, faster, and less error-prone.
 
-Below are descriptions of AudioSample, eqFilter, and AudioMeasure classes.
+Below are descriptions of AudioSample, EqFilter, AudioExtras, AudioPlayer, and AudioMeasure classes.
 
 ##AudioSample
 
@@ -60,9 +60,9 @@ Potential to add/change:
 - overload addition, subtraction, multiplication, division of these objects to make sense
 - change functions like hanning and zeropad to only work when it's time domain, instead of applying in time domain and switching back to current representation?  more clunky for user but more sensical paradigm...
 
-##eqFilter
+##EqFilter
 
-eqFilter is for generating EQ targets and plotting filter responses.
+EqFilter is for generating EQ targets and plotting filter responses.
 
 Unlike the others, this is *not* a class, but simply a collection of helper functions that act on filter objects [filter class to come].
 
@@ -116,9 +116,57 @@ plt.semilogx(f, db)
 plt.semilogx(f, db2)
 plt.semilogx(f, db3)
 plt.show()    
-
-
 ```
+
+
+##AudioExtras
+
+AudioExtras includes helper/convenience functions for audio interactions.  Also *not* a class.  
+
+There is potential to merge with EqFilt as class-less functions, potential to incorporate in other ways.
+
+methods include:
+
+`octaveSpacing(f0, octave)` - returns f1 and f2, spaced octave apart and centered around f0.  
+`normalize(floatVals)` - normalize a float array to [-1, 1].  
+`floatsToWavBinary(array,chunk)` - convert floats to an array of int16 chunks (size chunk) to be played.  
+`int16toFloat(array)` - convert array of int16s to floats.  
+`disablePrint()` - supresses all screen output.  
+`enablePrint()` - re-enables screen output.  
+`grouper(iterable, n, fillvalue=None)` - return an array of iterable in chunks of size n, and fills leftover space in last chunk with fillvalue.  
+
+
+##AudioPlayer
+
+audioPlayer is a class to play or play/record simultaneously with default audio card, on any channel.
+
+the user always interacts with a float np array between [-1,1].
+
+initialize by calling:
+```
+a = audioPlayer(audio=np.array([0,0,0]), channels=1, chunk=1024, Fs=44100)
+```
+
+-this sets up the audio interface (channel number, chunk size, and sample rate)  
+-this also sets the default audio to be played  
+
+###available class methods are:
+
+`audioPlayer.setAudio(audio)` - sets the default audio to be played to the passed np array.  
+`audioPlayer.normalize()` - normalizes the default audio to [1, -1].  
+
+[The following two methods play either default audio (audioToPlay=None) or the passed audioToPlay. If audioToPlay is passed, it is set as the default audio.  They will normalize the audio to full scale [-1,1] if normalizeTestSignal=1, or won't alter the audio if it's set to 0. The methods expect all data to be passed/returned as bounded [-1,1] floats.  **If channel=0, the audio will play on all channels at once.  With an individual specified channel (channel=1,2,3...) it will only play over that channel.**]
+
+`audioPlayer.playAudio(channel=0, audioToPlay=None, normalizeTestSignal=1)` - plays audio.  
+`audioPlayer.measureChannel(channel=0, audioToPlay=None, normalizeTestSignal=1)` - measures an audio channel.  This function returns an array of arrays (as long as the # of channels).  Each array has the microphone signal associated with that input channel. output[0] is the first microphone, output[1] is the second, etc.
+
+Potential to add/change:
+
+- fix normalizeTestSignal to be a True/False flag
+- play audio on combinations of channels
+- right now, audioToPlay replaces the default audio.  perhaps (probably) it shouldn't.
+- methods to handle checking audio cards and printing available, as well as selecting new ones
+- more support for other audio formats potentially (everything in paInt16 right now)
 
 
 ##AudioMeasure
