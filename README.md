@@ -3,7 +3,7 @@
 
 This is a library designed to make audio measurment and audio data manipulation easier, faster, and less error-prone.
 
-Below are descriptions of AudioSample, AudioMeasure classes.
+Below are descriptions of AudioSample, eqFilter, and AudioMeasure classes.
 
 ##AudioSample
 
@@ -59,6 +59,66 @@ Potential to add/change:
 - up- and down- sample
 - overload addition, subtraction, multiplication, division of these objects to make sense
 - change functions like hanning and zeropad to only work when it's time domain, instead of applying in time domain and switching back to current representation?  more clunky for user but more sensical paradigm...
+
+##eqFilter
+
+eqFilter is for generating EQ targets and plotting filter responses.
+
+Unlike the others, this is *not* a class, but simply a collection of helper functions that act on filter objects [filter class to come].
+
+methods include:
+
+`EQTargetAtFreqs(freqs, style="normal")` - returns array of dB values (around 0dB) for a target EQ at the frequencies passed.  Target EQs include "bass", "normal", "flatter", and "flat". 
+`plotFilter(b, a, Fs, fig=None)` - plots a filter response.
+`plotSumFilter(b, a, Fs, prev=None, plotFlag=False)` - plots the combined filter response of several filters.  Pass a filter in, get a return value, and pass that value back in as prev in order to see the full response.
+
+EXPERIMENTAL
+`generateRoughEQTarget(Fs)` is a stopgap function to see the expected response of freq#, BW size biquad filters targeted for the EQ specified in the function.  It returns the overall filter response h and the frequencies f.
+
+###Typical use:
+```
+#setup values
+Fs = 44100    
+freqs = [60, 100, 200, 400, 800, 1600, 3200, 6400, 10000, 16000]
+dbGain = np.ones(len(freqs))   
+BW = 1.77
+fig = None
+
+#Generate some peaking biquad filters (one for each freqs), plot the response of each in fig
+for ind, freq in enumerate(freqs):
+    filt = bq.peaking(freq/(Fs/2.0), dbGain[ind], BW = BW)
+    fig = plotFilter(filt[0],filt[1], Fs, fig)
+show()
+    
+h = None
+plotFlag = False
+
+#Generate some peaking biquad filters (one for each freqs, plot the *total* response) 
+for ind, freq in enumerate(freqs):
+    if ind == len(freqs)-1:
+        #if last freq, turn plot on and use a high shelf instead
+        filt = bq.shelf(freq/(Fs/2.0), dbGain[ind], BW, 'high')
+        plotFlag = True
+    else:
+        #create a biquad for each freq
+        filt = bq.peaking(freq/(Fs/2.0), dbGain[ind], BW = BW)       
+    #accumlate the filter response, passing previous response in each time and supressing output until plotFlag = True
+    h = plotSumFilter(filt[0],filt[1], Fs, h, plotFlag)
+show()
+
+#Generate an EQ target
+f = xrange(20,20000,10)
+db = EQTargetAtFreqs(f,"normal")
+db2 = EQTargetAtFreqs(f,"flatter")
+db3 = EQTargetAtFreqs(f,"flat")
+plt.semilogx(f, db)
+plt.semilogx(f, db2)
+plt.semilogx(f, db3)
+plt.show()    
+
+
+```
+
 
 ##AudioMeasure
 
