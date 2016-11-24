@@ -21,29 +21,29 @@ a = audioSample(np.array([1,2,4,5]), "t", 48000)  #t for single sided freq domai
 a = audioSample(np.array([1,2,4,5]))  #assumes 44100, time-domain
 ```
 
-`audioSample.data` returns the raw data in whatever form is specified by type
-`audioSample.type` returns type t, f, or db.  t is real, f is complex, db is complex [mag + j(phase)]
-`audioSample.fs` returns the sampleRate
+`audioSample.data` returns the raw data in whatever form is specified by type  
+`audioSample.type` returns type t, f, or db.  t is real, f is complex, db is complex [mag + j(phase)]  
+`audioSample.fs` returns the sampleRate  
 
 ###available class methods are:
 
-`audioSample.f()` - get frequency values array [0, 20, 40 ...] Hz
-`audioSample.t()` - get time value array [0, 1, 2, 3] Sec
-`audioSample.toTime()` - put data in time domain
-`audioSample.toFreq()` - put data in freq domain
-`audioSample.toDb()` - put data in dB
-`audioSample.plot()` - plot the data in whatever form it's in
-`audioSample.PDF()` - plot the PDF of the data
-`audioSample.normalize()` - normalizes time signal to [-1,1] and dB signal to 0dBFS
-`audioSample.hanning()` - apply hanning window to the *time-domain* version of the data
-`audioSample.zeroPadStart(length)` - zero pad (<length> zeros) the start of the *time-domain* version of the data
-`audioSample.zeroPadEnd(length)` - zero pad (<length> zeros) the end of the *time-domain* version of the data
+`audioSample.f()` - get frequency values array [0, 20, 40 ...] Hz  
+`audioSample.t()` - get time value array [0, 1, 2, 3] Sec  
+`audioSample.toTime()` - put data in time domain  
+`audioSample.toFreq()` - put data in freq domain  
+`audioSample.toDb()` - put data in dB  
+`audioSample.plot()` - plot the data in whatever form it's in  
+`audioSample.PDF()` - plot the PDF of the data  
+`audioSample.normalize()` - normalizes time signal to [-1,1] and dB signal to 0dBFS  
+`audioSample.hanning()` - apply hanning window to the *time-domain* version of the data  
+`audioSample.zeroPadStart(length)` - zero pad (<length> zeros) the start of the *time-domain* version of the data  
+`audioSample.zeroPadEnd(length)` - zero pad (<length> zeros) the end of the *time-domain* version of the data  
 
 [The following two methods put the data in dB (no others alter the type), and are destructive if flag is 'y'.
 This replaces dB data with smoothed data.  If 'n', an audioSample object with smoothed data is returned.]
 
-`audioSample.smoothFFT(octSmooth, destructive)` - smooth once with octSmooth resolution (.10 or .33, for instance)
-`audioSample.doubleSmooth(octSmooth, destructive)` - smooth twice with octSmooth resolution
+`audioSample.smoothFFT(octSmooth, destructive)` - smooth once with octSmooth resolution (.10 or .33, for instance)  
+`audioSample.doubleSmooth(octSmooth, destructive)` - smooth twice with octSmooth resolution  
 
 Potential to add/change:
 
@@ -71,33 +71,33 @@ initialize by calling:
 a = audioMeasure(np.array([1,1,1]),type="t",Fs=44100)
 ```
 
-`audioMeasure.output` returns an audioSample holding the measurement audio to be played out during measurement
-`audioMeasure.input` returns an array of audioSamples recordings from the last measurement, one for each channel
-`audioMeasure.tf` returns an array of transfer function measurements, for each channel of last measurement
-`audioMeasure.outInfo` returns a dictionary with several useful pieces of stored information 
-    (like number of repetitions of for test audio, test audio type, etc)
-`audioMeasure.fs` returns the sampling rate
+`audioMeasure.output` returns an audioSample holding the measurement audio to be played out during measurement  
+`audioMeasure.input` returns an array of audioSamples recordings from the last measurement, one for each channel  
+`audioMeasure.tf` returns an array of transfer function measurements, for each channel of last measurement  
+`audioMeasure.outInfo` returns a dictionary with several useful pieces of stored information   
+    (like number of repetitions of for test audio, test audio type, etc)  
+`audioMeasure.fs` returns the sampling rate  
 
 ###available class methods are:
 
-+ `audioMeasure.pinkNoise(duration, Fs)` - set measurement signal to pink noise of <duration> secs, if no Fs/duration provided it overwrites the current audioMeasure.output with the same Fs and duration.
-+ `audioMeasure.pinkNoiseLoop(samples, repetitions, Fs)` - set measurement signal to a <samples> long, loopable pink noise test signal that repeats <repetitions> times.  Fs is optional, and will overwrite object default.
-+ `audioMeasure.testAllChannels(channels)` - give max number of channels, this will step through and test all channels with the 
+`audioMeasure.pinkNoise(duration, Fs)` - set measurement signal to pink noise of <duration> secs, if no Fs/duration provided it overwrites the current audioMeasure.output with the same Fs and duration.  
+`audioMeasure.pinkNoiseLoop(samples, repetitions, Fs)` - set measurement signal to a <samples> long, loopable pink noise test signal that repeats <repetitions> times.  Fs is optional, and will overwrite object default.  
+`audioMeasure.testAllChannels(channels)` - give max number of channels, this will step through and test all channels with the 
     stored measurement signal.  It will place them in audioMeasure.input.  Again, this assumes multiple speakers measured at 
-    one microphone.  The first speakers measured signal can be found at audioMeasure.input[0], second at input[1], etc.
-+ `audioMeasure.calcTF()` - step through audio signals stored in input, and using the measurement signal from output, calculate
-    and update the tf field.  audioMeasure.tf[0] is the audioSample for the TF of the first speaker
-+ `audioMeasure.plotImpulseResp()`
-+ `audioMeasure.plotFreqResp()`
+    one microphone.  The first speakers measured signal can be found at audioMeasure.input[0], second at input[1], etc.  
+`audioMeasure.calcTF()` - step through audio signals stored in input, and using the measurement signal from output, calculate
+    and update the tf field.  audioMeasure.tf[0] is the audioSample for the TF of the first speaker.  
+`audioMeasure.plotImpulseResp()`  
+`audioMeasure.plotFreqResp()`  
 
 *EXPERIMENTAL*
 
-+ `audioMeasure.differenceFromEQ(eqShape="flatter", doplot=False)`
-+ `audioMeasure.differenceFromSmoothed(doplot=False)`
-+ `audioMeasure.generateEQfromTF(eqShape="flatter", doplot=False, limits=100)`
-+ `audioMeasure.processEQ(eqVals, maximum=10, minimum=-10)`
-+ `audioMeasure.createEQs(eq, doplot=False)`
-+ `audioMeasure.compareEQFiltToEQ(filt, eq, f)`
+`audioMeasure.differenceFromEQ(eqShape="flatter", doplot=False)`  
+`audioMeasure.differenceFromSmoothed(doplot=False)`  
+`audioMeasure.generateEQfromTF(eqShape="flatter", doplot=False, limits=100)`  
+`audioMeasure.processEQ(eqVals, maximum=10, minimum=-10)`  
+`audioMeasure.createEQs(eq, doplot=False)`  
+`audioMeasure.compareEQFiltToEQ(filt, eq, f)`  
 
 ### Typical use:
 
