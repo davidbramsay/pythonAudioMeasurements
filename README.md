@@ -68,12 +68,13 @@ Unlike the others, this is *not* a class, but simply a collection of helper func
 
 methods include:
 
-`EQTargetAtFreqs(freqs, style="normal")` - returns array of dB values (around 0dB) for a target EQ at the frequencies passed.  Target EQs include "bass", "normal", "flatter", and "flat". 
-`plotFilter(b, a, Fs, fig=None)` - plots a filter response.
-`plotSumFilter(b, a, Fs, prev=None, plotFlag=False)` - plots the combined filter response of several filters.  Pass a filter in, get a return value, and pass that value back in as prev in order to see the full response.
+`EQTargetAtFreqs(freqs, style="normal")` - returns array of dB values (around 0dB) for a target EQ at the frequencies passed.  Target EQs include "bass", "normal", "flatter", and "flat".   
+`plotFilter(b, a, Fs, fig=None)` - plots a filter response.  
+`plotSumFilter(b, a, Fs, prev=None, plotFlag=False)` - plots the combined filter response of several filters.  Pass a filter in, get a return value, and pass that value back in as prev in order to see the full response.  
 
-EXPERIMENTAL
-`generateRoughEQTarget(Fs)` is a stopgap function to see the expected response of freq#, BW size biquad filters targeted for the EQ specified in the function.  It returns the overall filter response h and the frequencies f.
+*EXPERIMENTAL*
+
+`generateRoughEQTarget(Fs)` is a stopgap function to see the expected response of freq#, BW size biquad filters targeted for the EQ specified in the function.  It returns the overall filter response h and the frequencies f.  
 
 ###Typical use:
 ```
