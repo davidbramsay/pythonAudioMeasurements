@@ -17,7 +17,7 @@ db is in mag/phase representation, in db
 initialize by calling:
 ```
 a = audioSample(np.array([1,2,4,5]), "f", 44100)  #f for single sided freq domain, 44100 for samplerate
-a = audioSample(np.array([1,2,4,5]), "t", 48000)  #t for single sided freq domain, 44100 for samplerate
+a = audioSample(np.array([1,2,4,5]), "t", 48000)  #t for time domain signal, 48000 for samplerate
 a = audioSample(np.array([1,2,4,5]))  #assumes 44100, time-domain
 ```
 
@@ -155,10 +155,15 @@ a = audioPlayer(audio=np.array([0,0,0]), channels=1, chunk=1024, Fs=44100)
 `audioPlayer.setAudio(audio)` - sets the default audio to be played to the passed np array.  
 `audioPlayer.normalize()` - normalizes the default audio to [1, -1].  
 
-[The following two methods play either default audio (audioToPlay=None) or the passed audioToPlay. If audioToPlay is passed, it is set as the default audio.  They will normalize the audio to full scale [-1,1] if normalizeTestSignal=1, or won't alter the audio if it's set to 0. The methods expect all data to be passed/returned as bounded [-1,1] floats.  **If channel=0, the audio will play on all channels at once.  With an individual specified channel (channel=1,2,3...) it will only play over that channel.**]
+The following two methods have the following features:
++ they play either default audio from the initialization (audioToPlay=None) or the passed audioToPlay. If audioToPlay is passed, it is set as the default audio.  
++ They will normalize the audio to full scale [-1,1] if normalizeTestSignal=1, or won't alter the audio if it's set to 0. The methods expect all data to be passed/returned as bounded [-1,1] floats.  
++ If channel=0, the audio will play on all channels at once.  With an individually specified channel (channel=1,2,3...) it will only play over that channel.
 
 `audioPlayer.playAudio(channel=0, audioToPlay=None, normalizeTestSignal=1)` - plays audio.  
-`audioPlayer.measureChannel(channel=0, audioToPlay=None, normalizeTestSignal=1)` - measures an audio channel.  This function returns an array of arrays (as long as the # of channels).  Each array has the microphone signal associated with that input channel. output[0] is the first microphone, output[1] is the second, etc.
+`audioPlayer.measureChannel(channel=0, audioToPlay=None, normalizeTestSignal=1)` - measures an audio channel.  
+
+*The measureChannel function returns an array of arrays (as long as the # of channels).  Each array has the microphone signal associated with that input channel. output[0] is the first microphone, output[1] is the second, etc.*
 
 Potential to add/change:
 
