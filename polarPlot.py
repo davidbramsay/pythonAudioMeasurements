@@ -14,6 +14,8 @@ class polarPlot(object):
     # as of right now, you pass in a pyStepper motor instance
     def __init__(self, usingMotor=None, makeMotor=False, board="/dev/cu.usbmodem1441", pins=[2,3,4,5], testSignalSamples=8192, testSignalRepetitions=30, Fs=44100, channels=1):
 
+        self.testSignalSamples = testSignalSamples
+        self.testSignalRepetitions = testSignalRepetitions
         self.audioMeas= audioMeasure(Fs=Fs)
         self.allFrequencies = None
         self.response = None
@@ -22,6 +24,8 @@ class polarPlot(object):
         self.channels = channels
 
         # create test signal
+        # In Tony's updated, this got moved into measure loop; not sure why?
+        # probably better to use one test signal for complete measurement
         self.audioMeas.pinkNoiseLoop(samples=testSignalSamples, repetitions=testSignalRepetitions, Fs=Fs)
 
         # initiate and set up motor if needed
@@ -119,6 +123,7 @@ class polarPlot(object):
             # all frequencies will be collected in measure
             # this is because if this has not been set yet,
             # then a transfer function has not yet been calculated
+            time.sleep(0.5)
             self.measure()
 
 
@@ -190,7 +195,7 @@ class polarPlot(object):
         location = raw_input("please enter the location of this measurement (default: MIT Anechoic Chamber, Blg 41):")
         if not location: location = "MIT Anechoic Chamber, Blg 41"
 
-        speaker =raw_input("please enter the speaker used for this measurement (default: Equator Audio D5):")
+        speaker = raw_input("please enter the speaker used for this measurement (default: Equator Audio D5):")
         if not speaker: speaker = "Equator Audio D5"
 
         extraInfo = raw_input("please enter any additional description of this measurement:")
@@ -215,10 +220,12 @@ class polarPlot(object):
 
         polarData = {'angles': [], 'measurements': []}
 
+        self.countDown(10)
+
         # loops through a whole turn
         # evenly dividing into numMeasurements steps
         # rounding down
-        """potentially store the angles measured in a serparate list to avoid
+        """potentially store the angles measured in a separate list to avoid
             repetitious data/excessive memory usage"""
         for degrees in range(0,360, degreeSeparation):
 
@@ -246,6 +253,9 @@ class polarPlot(object):
                 # add (angle in degrees, real part of amplitude) to this frequency's data list
                 freqData[freq].append((degrees, audiomeas.data[index].real))
 
+        # allow for sucessive plots to be made without
+        # having to reposition
+        self.motor.set_position(0)
 
         # coordinates now contains the appropriate data,, now need to plot them
         return freqData
@@ -256,8 +266,8 @@ class polarPlot(object):
         on a polar axes
 
         Args:
-        measured_data (dict): contains alread-measured data in the format
-                            {frequecy1 : [(angle1 in degrees, amplitude1), ...], ....}
+        measured_data (dict): contains already-measured data in the format
+                            {frequency1 : [(angle1 in degrees, amplitude1), ...], ....}
         """
 
         # suplot on which all data will be places
@@ -277,7 +287,7 @@ class polarPlot(object):
 
             data = measured_data[freq]
 
-            print(freq, data)
+            # print(freq, data)
 
             # unpack the data
             # comes out in tuple
@@ -312,6 +322,7 @@ class polarPlot(object):
         ax.grid(True) # turn on grid lines
         ax.set_rticks(np.arange(0,50, 10)) # add tick marks
         ax.legend(legend, loc = "upper left") # create key
+        plt.savefig("fig_temp" + str())
         plt.show()
 
     def countDown(self, sec):

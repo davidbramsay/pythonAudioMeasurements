@@ -7,20 +7,20 @@ class Stepper(object):
 
     def __init__(self, board, pins, stepsPerRot=512, sleepTime=0.0002):
         """
-        Args: 
+        Args:
         pins (iterable of ints): containing the pins to be used for the
                                  motor in order
         board (Arduino): must be a properly initialized Arduino board
                          via pyfirmata
         stepsPerRot (int): number of steps per rotation
-        sleepTime (float): desired time in seconds between phases in 
-                            motor turn 
+        sleepTime (float): desired time in seconds between phases in
+                            motor turn
         """
-        
+
         # check pins input
         assert (len(pins) == 4), "Must enter exactly 4 pins for this motor"
         assert (all([str(pin).isdigit() for pin in pins])), "Pins must be given as digits"
-            
+
         # string labels for pin declaration
         # strings are to pyfirmata standard
         self.pinLabels = ["d:" + str(pin) + ":o" for pin in pins]
@@ -29,14 +29,14 @@ class Stepper(object):
         # as necessary to drive in the given direction (see Stepper.turn)
         self.possibleDrives = {"CW": Stepper.CW_drive, "CCW": Stepper.CCW_drive}
         self.location = 0 # position of motor in degrees
-        
 
-        self.board = board 
+
+        self.board = board
         self.pins = [self.board.get_pin(pin) for pin in self.pinLabels] # declaration of pin objects
-        
+
         self.stepsPerRot = stepsPerRot*8 # times 8 because there are 8 phases per step
         self.sleepTime = sleepTime  # seconds
-             
+
 
 
     def set_position(self, location):
@@ -47,12 +47,12 @@ class Stepper(object):
         Returns:
         (int): location after movement
         """
-        
-        # make sure 0<=location<360
-        location = Stepper.validifyLoc(location) 
 
-        ccw = location - self.location
-        cw = ccw - 360
+        # make sure 0<=location<360
+        location = Stepper.validifyLoc(location)
+
+        cw = location - self.location
+        ccw = cw - 360
 
         # optimization of direction
         degToTurn = ccw if min(abs(ccw), abs(cw)) == abs(ccw) else cw
@@ -75,11 +75,11 @@ class Stepper(object):
         Turns the motor the given number of degrees in the given direction.
         If given a negative degrees, it will turn in the opposite direction.
 
-        Driving follows the bellow pattern. Note that each index indicates 
-        the state of a pin and that 1 means "HIGH" and 0 means "LOW". This 
-        is accomplished comtantly adjusting a list represing the state of the 
+        Driving follows the bellow pattern. Note that each index indicates
+        the state of a pin and that 1 means "HIGH" and 0 means "LOW". This
+        is accomplished comtantly adjusting a list represing the state of the
         motor as described above. The stages are represended as two different
-        lists, one for the stage with only one motor on 1 and the other for 
+        lists, one for the stage with only one motor on 1 and the other for
         the state in which two motors are on 1
 
 
@@ -93,23 +93,23 @@ class Stepper(object):
         [1,0,0,1]
 
         """
-        
+
         # direction input validation
         assert (direction in self.possibleDrives), "Valid directions must be strings and can be 'CW' or 'CCW'"
-        
 
-        # if given a negative angle, turn the opposite 
+
+        # if given a negative angle, turn the opposite
         # direction for the given direction
         if degrees < 0:
-            # create a dummy list containing the possible 
+            # create a dummy list containing the possible
             # drives, "CW" and "CCW", remove the current
-            # and assign direction to the other, what is 
+            # and assign direction to the other, what is
             # left
             temp_keys = list(self.possibleDrives.keys())
             temp_keys.remove(direction)
             direction = temp_keys[0]
             degrees = abs(degrees)
-            
+
 
         # assign drive to the proper list-altering
         # helper function according to the direction
@@ -117,7 +117,7 @@ class Stepper(object):
 
 
         # convesion from degrees to steps
-        numSteps = int(self.stepsPerRot * (degrees / 360.)) 
+        numSteps = int(self.stepsPerRot * (degrees / 360.))
 
         # HIGH LOW  LOW LOW or LOW HIGH LOW LOW depending on direction
         stage1 = [0,1,0,0] if direction == "CCW" else [1,0,0,0]
@@ -137,14 +137,14 @@ class Stepper(object):
             for i in range(len(self.pins)):
                 self.pins[i].write(stage[i])
                 time.sleep(self.sleepTime)
- 
+
 
             # adjust pin position for next iteration
             drive(stage)
 
 
-        # positive angles go "CCW", so add if going 
-        # counterclockwise and subtract if going  
+        # positive angles go "CCW", so add if going
+        # counterclockwise and subtract if going
         # clockwise
         if direction == "CCW":
             newLocation = self.location + degrees
@@ -159,7 +159,7 @@ class Stepper(object):
     def calibrate(self):
         """
         Resets the motor's position to zero, calibrating
-        it in place. 
+        it in place.
 
         Args, Retuns: None
         """
@@ -185,13 +185,13 @@ class Stepper(object):
     @staticmethod
     def validifyLoc(loc):
         """
-        Args: 
+        Args:
         loc (int, float): Position given as any real number
 
         Returns:
         (int): valid angle
 
-        Takes a angular location in the real numbers and returns a 
+        Takes a angular location in the real numbers and returns a
         valid angular location such that loc such that 0 <= loc < 360
 
         NOTE: angular positions in degrees
@@ -206,23 +206,23 @@ class Stepper(object):
 
         # account for position greater that 360
         loc = loc % 360
-    
+
         return loc
 
     @staticmethod
     def CCW_drive(stage):
         """
-        Args: 
+        Args:
         stage (list): stage to operate on
 
-        Modifies GIVEN stage such that the motor is being driven 
-        will move counterclockwise. 
-        
+        Modifies GIVEN stage such that the motor is being driven
+        will move counterclockwise.
+
         That is, the value originally
         at position stage[-1] is put at the beggining and everything
-        else is shifted accordingly. 
-            
-        NOTE: that this performs the operation on the given list and 
+        else is shifted accordingly.
+
+        NOTE: that this performs the operation on the given list and
         does not create a new list
         """
         stage.insert(0, stage[-1])
@@ -231,16 +231,16 @@ class Stepper(object):
     @staticmethod
     def CW_drive(stage):
         """
-        Args: 
+        Args:
         stage (list): stage to operate on
 
-        Modifies GIVEN stage such that the motor is being driven 
-        will move clockwise. 
-        
+        Modifies GIVEN stage such that the motor is being driven
+        will move clockwise.
+
         That is, the value originally
-        at position stage[0] is removed and put at the end. 
-        
-        NOTE: that this performs the 
+        at position stage[0] is removed and put at the end.
+
+        NOTE: that this performs the
         operation on the given list and does not create a new list
         """
         stage.append(stage[0])
@@ -265,4 +265,4 @@ class JoyStick():
 
 
 
-    
+
