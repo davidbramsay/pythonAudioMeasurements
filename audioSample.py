@@ -77,18 +77,16 @@ class audioSample(object):
 
 
     def __init__(self, dataArray = [], type = "t", Fs = 44100):
-        self.data = dataArray
-        self.fs = Fs
+        self._data = dataArray
+        self._fs = Fs
 
-        if type in ("t", "f", "db", "T", "F", "DB", "dB"):
-            self.type = type.lower()
-        else:
-            raise NameError("type invalid, use t, f, or db")
+        assert (type.lower() in ("t", "f", "db")), "type invalid, use t, f, or db"
+        self._type = type.lower()
 
         if (type =="t"):
-            self._tLength = len(self.data)
+            self._tLength = len(self._data)
         else:
-            self._tLength = 2* len(self.data) - 1
+            self._tLength = 2* len(self._data) - 1
             print ("make sure data is single sided, as " +
             "described in np.fft.rfft doc.  Reverse " +
             "transform to time is non-deterministic, " +
@@ -98,24 +96,69 @@ class audioSample(object):
 
     def f(self):
         #return frequencies of samples
-        if self.type=="t":
+        if self._type=="t":
             print "watch out, your raw data is in time units!"
 
-        return np.linspace(0, self.fs/2, self._tLength//2 + 1)
+        return np.linspace(0, self._fs/2, self._tLength//2 + 1)
 
 
     def t(self):
         #return times of samples
-        if self.type in ("f", "db"):
+        if self._type in ("f", "db"):
            print "watch out, your data is in freq units!"
 
-        return np.linspace(0.0, (float(self._tLength)-1.0)/self.fs, self._tLength)
+        return np.linspace(0.0, (float(self._tLength)-1.0)/self._fs, self._tLength)
+
+
+    @property
+    def data(self): return self._data
+
+
+    @property
+    def fs(self): return self._fs
+
+
+    @property
+    def type(self): return self._type
+
+
+    @fs.setter
+    def fs(self, value):
+        raise Exception('NOT IMPLEMENTED: Changing Fs requires intelligent upsampling/decimation.')
+
+
+    @data.setter
+    def data(self, value):
+        raise Exception('Prefer creating a new audiosample to setting data explicitly, this is a bad idea.')
+
+
+    @type.setter
+    def type(self, value):
+        assert (value.lower() in ("t", "f", "db")), "type invalid, use t, f, or db"
+
+        new_type = value.lower()
+        current_type = self._type
+
+        if new_type != current_type:
+            if new_type == "t":
+                print 'converted to time'
+                self.toTime()
+            elif new_type == "f":
+                print 'converted to freq'
+                self.toFreq()
+            elif new_type == "db":
+                print 'converted to db'
+                self.toDb()
+            else:
+                raise TypeError("instance.type is invalid!")
+        else:
+            print 'already of that type'
 
 
     def toTime(self):
-        if (self.type == "f"):
-            self.data = np.fft.irfft(self.data, self._tLength)
-            self.type = "t"
+        if (self._type == "f"):
+            self._data = np.fft.irfft(self._data, self._tLength)
+            self._type = "t"
 
         elif (self.type == "db"):
             self.toFreq()
@@ -123,56 +166,62 @@ class audioSample(object):
 
         elif (self.type == "t"):
             print "already in time"
+
         else:
             raise TypeError("instance.type is invalid!")
 
 
     def toFreq(self):
-        if (self.type == "t"):
-            self.data = np.fft.rfft(self.data)
-            self.type = "f"
+        if (self._type == "t"):
+            self._data = np.fft.rfft(self._data)
+            self._type = "f"
 
-        elif (self.type == "db"):
-            unDBed = pow(10, self.data.real/20.0)
-            self.data = unDBed*np.cos(self.data.imag) + 1j*unDBed*np.sin(self.data.imag)
-            self.type = "f"
+        elif (self._type == "db"):
+            unDBed = pow(10, self._data.real/20.0)
+            self._data = unDBed*np.cos(self._data.imag) + 1j*unDBed*np.sin(self._data.imag)
+            self._type = "f"
 
-        elif (self.type == "f"):
+        elif (self._type == "f"):
             print "already in freq"
+
         else:
             raise TypeError("instance.type is invalid!")
 
 
     def toDb(self):
-        if (self.type == "f"):
-            mag = 20*np.log10(np.abs(self.data))
-            phase = np.angle(self.data)
-            self.data = mag+(1j*phase)
-            self.type = "db"
+        if (self._type == "f"):
+            mag = 20*np.log10(np.abs(self._data))
+            phase = np.angle(self._data)
+            self._data = mag+(1j*phase)
+            self._type = "db"
 
-        elif (self.type == "t"):
+        elif (self._type == "t"):
             self.toFreq()
             self.toDb()
 
-        elif (self.type == "db"):
+        elif (self._type == "db"):
             print "already in db"
+
         else:
             raise TypeError("instance.type is invalid!")
 
 
     def plot(self):
         #plot the signal in the current domain
-        if (self.type == "t"):
-            plt.plot(self.t(), self.data)
+
+        fig = plt.figure()
+
+        if (self._type == "t"):
+            plt.plot(self.t(), self._data)
             plt.title("Time Domain Plot")
             plt.grid(True)
             plt.xlabel('time (s)')
             plt.ylabel('magnitude')
             plt.show()
 
-        elif (self.type == "f"):
+        elif (self._type == "f"):
             self.toDb()
-            plt.semilogx(self.f(), self.data.real)
+            plt.semilogx(self.f(), self._data.real)
             plt.title("Single Sided FFT Magnitude")
             plt.grid(True)
             plt.xlabel('freq (Hz)')
@@ -181,7 +230,7 @@ class audioSample(object):
             self.toFreq()
 
         else:
-            plt.semilogx(self.f(), self.data.real)
+            plt.semilogx(self.f(), self._data.real)
             plt.title("Single Sided FFT Magnitude")
             plt.grid(True)
             plt.xlabel('freq (Hz)')
@@ -189,40 +238,61 @@ class audioSample(object):
             plt.show()
 
 
-    def PDF(self):
+    def PDF(self, ac_couple=False):
         #plot the PDF
         def plotPDF():
-            plt.semilogx(self.f(), np.abs(np.square(self.data)))
+
+            x = self.f()
+            y = np.square(np.abs(self._data))
+
+            if ac_couple: y[0]=0
+
+            plt.plot(x,y)
+            plt.xscale('symlog')
             plt.title("PSD")
             plt.grid(True)
+            plt.autoscale()
             plt.xlabel('freq (Hz)')
             plt.ylabel('Power')
             plt.show()
 
-        if (self.type == "t"):
-            self.toFreq()
-            plotPDF()
-            self.toTime()
+        self.applyInDomain('f', plotPDF)
 
-        elif (self.type == "f"):
-            plotPDF()
 
-        elif (self.type == "db"):
-            self.toFreq()
-            plotPDF()
-            self.toDb()
+    def removeDCOffset(self, new_offset=0):
+        #add or remove dc offset
+        def setOffset():
+            self._data = self._data - np.mean(self._data)
+            self._data = self._data + new_offset
+
+        self.applyInDomain('t', setOffset)
 
 
     def normalize(self):
         #normalize to [-1,1] for time data and 0dBFS for dB data
-        if (self.type == "t"):
+        assert(len(self._data)), 'must have data to normalize'
+        if (self._type == "t"):
+            assert (np.mean(self._data) < 1e-15), 'must not have DC component to be normalized, remove with removeDCOffset'
             print "normalizing time data to [-1, 1]"
-            self.data = self.data / float(np.amax(np.abs(self.data)))
-        elif (self.type == "db"):
+            self._data = self._data / float(np.amax(np.abs(self._data)))
+        elif (self._type == "db"):
             print "normalizing db data to 0dBFs"
-            self.data.real = self.data.real - float(np.amax(self.data.real))
+            self._data.real = self._data.real - float(np.amax(self._data.real))
         else:
             print "not a normalizable type, please submit time domain or db data"
+
+
+    def setVolume(self, volume=-6):
+        #set volume relative to normalized [-1, 1] full-scale
+        assert(len(self._data)), 'must have data to alter scaling'
+        assert (volume <= 0), 'volume must be in relative dBFS to full-scale (<=0)'
+
+        def setVol():
+            assert (np.mean(self._data) < 1e-15), 'must not have DC component to set volume, remove with removeDCOffset'
+            linear_gain = 10**(volume/20.0)
+            self._data = self._data * linear_gain / float(np.amax(np.abs(self._data)))
+
+        self.applyInDomain('t', setVol)
 
 
     def doubleSmooth(self, octSmooth, destructive = 'y'):
@@ -235,30 +305,30 @@ class audioSample(object):
             print "CREATED COPY of original samples"
             temp = copy.deepcopy(self)
             temp.smoothFFT(octSmooth)
-            temp.smoothFFT(octSmooth)             
+            temp.smoothFFT(octSmooth)
             return temp
-  
-          
+
+
     def smoothFFT(self, octSmooth, destructive = 'y'):
         #convert data to dB and smooth magnitude data, leaving phase
         #this is destructive of magnitude data in the audioSample class unless specified not to be,
         #will return a new audioSample if 'nondestructive'
         self.toDb()
 
-        temp = np.zeros(len(self.data), float)
+        temp = np.zeros(len(self._data), float)
         freqs = self.f()
 
         for i in range(len(temp)):
             bounds = ae.octaveSpacing(freqs[i], octSmooth)
-            temp[i] = np.mean(self.data[np.where((freqs>=bounds[0]) & (freqs<=bounds[1]))].real)
-        
+            temp[i] = np.mean(self._data[np.where((freqs>=bounds[0]) & (freqs<=bounds[1]))].real)
+
         if destructive in ['y', 'Y', 'yes', 'YES']:
-            self.data.real = temp
+            self._data.real = temp
             print ("DESTRUCTIVE ACTION - this will change the magnitude data" +
             " stored irreversibly, and other functions will work but have no" +
             " intuitive meaning")
         else:
-            return audioSample(temp, 'dB', self.fs)
+            return audioSample(temp, 'dB', self._fs)
 
 
     def hanning(self):
@@ -266,55 +336,43 @@ class audioSample(object):
         def hannIt():
             self.data = self.data * np.hanning(self._tLength)
 
-        if (self.type == "t"):
-            hannIt()
+        self.applyInDomain('t', hannIt)
 
-        elif (self.type == "f"):
-            self.toTime()
-            hannIt()
-            self.toFreq()
 
-        elif (self.type == "db"):
-            self.toTime()
-            hannIt()
-            self.toDb()
-    
-        
     def zeroPadStart(self, length=64):
         #apply zero pad to the beginning of the time domain signal
         def padIt():
-            self.data = np.concatenate([np.zeros(length), self.data])            
-            self._tLength = len(self.data)
+            self._data = np.concatenate([np.zeros(length), self._data])
+            self._tLength = len(self._data)
 
-        if (self.type == "t"):
-            padIt()
+        self.applyInDomain('t', padIt)
 
-        elif (self.type == "f"):
-            self.toTime()
-            padIt()
-            self.toFreq()
 
-        elif (self.type == "db"):
-            self.toTime()
-            padIt()
-            self.toDb()
-   
-     
     def zeroPadEnd(self, length=64):
         #apply zero pad to the end of the time domain signal
         def padIt():
-            self.data = np.concatenate([self.data, np.zeros(length)])            
+            self._data = np.concatenate([self._data, np.zeros(length)])
             self._tLength = len(self.data)
 
-        if (self.type == "t"):
-            padIt()
+        self.applyInDomain('t', padIt)
 
-        elif (self.type == "f"):
-            self.toTime()
-            padIt()
-            self.toFreq()
 
-        elif (self.type == "db"):
-            self.toTime()
-            padIt()
-            self.toDb()
+    def applyInDomain(self, domain, func):
+
+        assert (domain in ['t','f','db']), 'domain must be t, f, or db'
+        current_type = self._type
+        undo_domain = False
+
+        if domain != current_type:
+            undo_domain = True
+            if domain == "t": self.toTime()
+            elif domain == "f": self.toFreq()
+            elif domain == "db": self.toDb()
+
+        func()
+
+        if undo_domain:
+            if current_type == "t": self.toTime()
+            elif current_type == "f": self.toFreq()
+            elif current_type == "db": self.toDb()
+

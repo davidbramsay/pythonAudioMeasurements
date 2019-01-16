@@ -12,21 +12,21 @@ import cPickle as pickle
 class polarPlot(object):
 
     # as of right now, you pass in a pyStepper motor instance
-    def __init__(self, usingMotor=None, makeMotor=False, board="/dev/cu.usbmodem1441", pins=[2,3,4,5], testSignalSamples=8192, testSignalRepetitions=30, Fs=44100, channels=1):
+    def __init__(self, usingMotor=None, makeMotor=False, board="/dev/cu.usbmodem1441", pins=[2,3,4,5], audioMeasure=None, testSignalSamples=8192, testSignalRepetitions=30, Fs=44100, channels=1):
 
-        self.testSignalSamples = testSignalSamples
-        self.testSignalRepetitions = testSignalRepetitions
-        self.audioMeas= audioMeasure(Fs=Fs)
+        if audioMeasure:
+            self.audioMeas = audioMeasure
+        else:
+            self.testSignalSamples = testSignalSamples
+            self.testSignalRepetitions = testSignalRepetitions
+            self.audioMeas= audioMeasure(Fs=Fs)
+            self.audioMeas.pinkNoiseLoop(samples=testSignalSamples, repetitions=testSignalRepetitions)
+
         self.allFrequencies = None
         self.response = None
         self.board = None
         self.motor = None
         self.channels = channels
-
-        # create test signal
-        # In Tony's updated, this got moved into measure loop; not sure why?
-        # probably better to use one test signal for complete measurement
-        self.audioMeas.pinkNoiseLoop(samples=testSignalSamples, repetitions=testSignalRepetitions, Fs=Fs)
 
         # initiate and set up motor if needed
         if usingMotor:
@@ -41,13 +41,12 @@ class polarPlot(object):
         print("initializing. NOT MEASURING")
         self.measure(True)
 
-    def makePlot(self, motor=False, numMeasurements=4, degreeMeasurements=None, measurementFrequencies=None):
+    def makePlot(self, numMeasurements=4, measurementFrequencies=None): # toimplement: degreeMeasurements=None
         """
         Makes a polar plot of the default connected microphone
 
         Args: see polarPlot.collectData
         """
-        print(motor)
         data = self.collectData(numMeasurements=numMeasurements, measurementFrequencies=measurementFrequencies)
         self.plot(data)
 
@@ -81,7 +80,7 @@ class polarPlot(object):
         """
 
         # run tests
-        self.audioMeas.testAllChannels(channels=self.channels)
+        self.audioMeas.testAllChannels()
         self.audioMeas.calcTF()
 
         if test:
@@ -220,7 +219,7 @@ class polarPlot(object):
 
         polarData = {'angles': [], 'measurements': []}
 
-        self.countDown(10)
+        self.countDown(35)
 
         # loops through a whole turn
         # evenly dividing into numMeasurements steps

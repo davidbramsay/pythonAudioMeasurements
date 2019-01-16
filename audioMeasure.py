@@ -99,28 +99,24 @@ xaxis = a.input[0].t()
 
 class audioMeasure(object):
 
-    def __init__(self, dataArray = [], type = "t", Fs = 44100):
+    def __init__(self, dataArray = [], type = "t", Fs = 44100, channels=2):
         self.output = audioSample(dataArray, type, Fs)
         self.input = []
         self.tf = []
         self.outInfo = {}
         self.fs = Fs
+        self.aplayer = audioPlayer(self.output.data, channels, Fs=Fs)
 
 
-    def pinkNoise(self, duration=None, Fs=None, normalize=True):
+    def pinkNoise(self, duration=None, normalize=True):
         #overwrite output data with pink noise of size and fs specified
         #defaults to size and fs that are current (0 and 44100 for empty instance)
-        if Fs is None:
-            Fs=self.fs
-            print "Fs is assumed to be " + str(self.fs)
-        if (Fs != self.fs):
-            self.fs =Fs
-            print "WARNING: the provided Fs is *not* a match for this object, changed object to match"
+        #duration in sec
         if duration is None:
-            duration = self._tLength / float(Fs)
             print "size of previous output signal used, " + str(duration) + " sec"
+            duration = self.output._tLength / float(self.fs)
 
-        size = int(duration * Fs)
+        size = int(duration * self.fs)
 
         B = np.array([ 0.04992203, -0.09599354,  0.0506127 , -0.00440879])
         A = np.array([ 1.        , -2.494956  ,  2.01726588, -0.5221894 ])
@@ -128,24 +124,20 @@ class audioMeasure(object):
         data = np.random.rand(size+5000) - 0.5
         data = signal.filtfilt(B,A,data)
 
-        self.output = audioSample(data[5000:], 't', Fs)
+        self.output = audioSample(data[5000:], 't', self.fs)
+        self.output.removeDCOffset()
         if normalize: self.output.normalize()
+        self.aplayer.setAudio(self.output.data)
         self.outInfo['type'] = 'pink'
         self.outInfo['reps'] = 1
         self.outInfo['lenRepeated'] = size
 
 
-    def pinkNoiseLoop(self, samples=8192, repetitions=10, Fs=None, normalize=True):
+    def pinkNoiseLoop(self, samples=8192, repetitions=10, normalize=True):
         #overwrite output data with pink noise of size and fs specified,
         #repeated a certain number of times.  The pink noise is designed
         #to be loopable without a break in between.  Make sure your loop
         #duration is long enough to capture the full impulse response.
-        if Fs is None:
-            Fs=self.fs
-            print "Fs is assumed to be " + str(self.fs)
-        if (Fs != self.fs):
-            self.fs =Fs
-            print "WARNING: the provided Fs is *not* a match for this object, changed object to match"
 
         B = np.array([ 0.04992203, -0.09599354,  0.0506127 , -0.00440879])
         A = np.array([ 1.        , -2.494956  ,  2.01726588, -0.5221894 ])
@@ -157,22 +149,108 @@ class audioMeasure(object):
 
         data = np.tile(data, repetitions)
 
-        self.output = audioSample(data, 't', Fs)
+        self.output = audioSample(data, 't', self.fs)
+        self.output.removeDCOffset()
         if normalize: self.output.normalize()
+        self.aplayer.setAudio(self.output.data, keepPreviousVol=True)
         self.outInfo['type'] = 'pink'
         self.outInfo['reps'] = repetitions
         self.outInfo['lenRepeated'] = samples
 
 
-    def testAllChannels(self, channels=2):
-        #using 1 mic only, channel 1 always (out[0])
-        self.output.toTime()
-        self.input = []
-        ap = audioPlayer(self.output.data, channels)
+    def setVolLinearity(self, start_vol=-18, step=4):
+        #step through volumes, plot previous on new
+        vols = range(start_vol, 0, step)
 
-        for ind in range(channels):
-            out = ap.measureChannel(ind+1)
-            self.input.append(audioSample(out[0],'t',self.output.fs))
+        plt.ion()
+        fig = plt.figure()
+        ax1 = fig.add_subplot(211)
+        ax2 = fig.add_subplot(212)
+
+        results, diffs = [], []
+        for i, vol in enumerate(vols):
+
+            self.aplayer.setVolume(vol)
+            self.testAllChannels()
+            self.input[0].toDb()
+            self.input[0].doubleSmooth(1/6.0)
+
+            x = self.input[0].f()
+            mag_data = self.input[0].data.real
+            results.append(mag_data)
+            diffs.append((mag_data - (vol-start_vol)) - results[0])
+
+            ax1.clear()
+            ax2.clear()
+            ax1.set_xscale('log')
+            ax2.set_xscale('log')
+            ax1.set_xlim([20, 20000])
+            ax2.set_xlim([20, 20000])
+            for r in results: ax1.plot(x,r)
+            for d in diffs: ax2.plot(x,d)
+
+            plt.show()
+
+            done = raw_input('Non-linearity?')
+            if done.lower() in ['y','yes']:
+                self.aplayer.setVolume(vol-step)
+                break
+
+        plt.ioff()
+        print 'volume set to ' + str(self.aplayer._volume)
+
+
+    def setRepeatsSNR(self, samples=8192, repeats=[5, 10, 15, 20, 25, 30, 35]):
+        #find SNR
+
+        print ('*'*70 + '\n')*6
+        print ' '*15 + 'MEASURING THE NOISE FLOOR, BE QUIET!!!\n'
+        print ('*'*70 + '\n')*6
+        repeat_longest = max(repeats)
+        self.pinkNoiseLoop(samples, repeat_longest)
+
+        silence = self.aplayer.measureChannel(audioToPlay=np.zeros(len(self.aplayer._rawaudio)), useVolume=False)[0]
+        signal = self.aplayer.measureChannel()[0]
+
+        results = []
+
+        for repeat_len in repeats:
+            temp_signal = audioSample(signal[samples*3:samples*repeat_len], 't', self.fs)
+            sig = audioSample(np.mean(temp_signal.data.reshape(-1, samples), axis=0), 't', self.fs)
+            sig.toDb()
+            sig.doubleSmooth(1/6.0)
+
+            temp_noise = audioSample(silence[samples*3:samples*repeat_len], 't', self.fs)
+            noise = audioSample(np.mean(temp_noise.data.reshape(-1, samples), axis=0), 't', self.fs)
+            noise.toDb()
+            noise.doubleSmooth(1/6.0)
+
+            ratio = sig.data.real - noise.data.real
+            results.append((repeat_len, ratio))
+
+        freqs = sig.f()
+
+        for r in results:
+            plt.semilogx(freqs, r[1], label=r[0])
+        plt.title("SNR")
+        plt.grid(True)
+        plt.xlim([20, 20000])
+        plt.xlabel('freq (Hz)')
+        plt.ylabel('dB')
+        plt.legend()
+        plt.show()
+
+        done = int(raw_input('select int repetitions:'))
+        self.pinkNoiseLoop(samples, done)
+
+
+    def testAllChannels(self):
+        #using 1 mic only, channel 1 always (out[0])
+        self.input = []
+
+        for ind in range(self.aplayer._channels):
+            out = self.aplayer.measureChannel(ind+1)
+            self.input.append(audioSample(out[0], 't', self.fs))
 
 
     def calcTF(self):
@@ -182,22 +260,20 @@ class audioMeasure(object):
         self.output.toTime()
         chunk = self.outInfo['lenRepeated']
         finalInd = int(self.output._tLength/float(chunk))
-        self.output.data = self.output.data[chunk*3:chunk*finalInd]
-        self.output._tLength = len(self.output.data)
+        temp_cleaned_output = audioSample(self.output.data[chunk*3:chunk*finalInd], 't', self.output.fs)
 
         #average in time first, turn to freq
-        outs = audioSample(np.mean(self.output.data.reshape(-1, self.outInfo['lenRepeated']), axis=0), 't', self.output.fs)
+        outs = audioSample(np.mean(temp_cleaned_output.data.reshape(-1, self.outInfo['lenRepeated']), axis=0), 't', self.output.fs)
         outs.toFreq()
 
         ins = []
         #input loop through, trim off beginning, make correct length
         for ind in range(len(self.input)):
             self.input[ind].toTime()
-            self.input[ind].data = self.input[ind].data[chunk*3:chunk*finalInd]
-            self.input[ind]._tLength = len(self.input[ind].data)
+            temp_cleaned_input = audioSample(self.input[ind].data[chunk*3:chunk*finalInd], 't', self.input[ind].fs)
 
             #average in time first, turn to freq
-            ins.append(audioSample(np.mean(self.input[ind].data.reshape(-1, self.outInfo['lenRepeated']), axis=0), 't', self.input[ind].fs))
+            ins.append(audioSample(np.mean(temp_cleaned_input.data.reshape(-1, self.outInfo['lenRepeated']), axis=0), 't', self.input[ind].fs))
             ins[ind].toFreq()
 
         self.tf = []
