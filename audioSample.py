@@ -99,7 +99,11 @@ class audioSample(object):
         if self._type=="t":
             print "watch out, your raw data is in time units!"
 
-        return np.linspace(0, self._fs/2, self._tLength//2 + 1)
+        try:
+            return self.freqs
+        except:
+            self.freqs = np.linspace(0, self._fs/2, self._tLength//2 + 1)
+            return self.freqs
 
 
     def t(self):
@@ -154,7 +158,6 @@ class audioSample(object):
         else:
             print 'already of that type'
 
-
     def toTime(self):
         if (self._type == "f"):
             self._data = np.fft.irfft(self._data, self._tLength)
@@ -206,12 +209,40 @@ class audioSample(object):
             raise TypeError("instance.type is invalid!")
 
 
-    def plot(self):
+    def plot(self, both=False):
         #plot the signal in the current domain
 
-        fig = plt.figure()
+        fig = plt.subplot(1,1,1)
 
-        if (self._type == "t"):
+        if both:
+            fig = plt.subplot(2,1,1)
+            _type = self._type
+
+            self.toTime()
+            plt.plot(self.t(), self._data)
+            plt.title("Time Domain Plot")
+            plt.grid(True)
+            plt.xlabel('time (s)')
+            plt.ylabel('magnitude')
+
+            plt.subplot(2,1,2)
+            self.toDb()
+            plt.semilogx(self.f(), self._data.real)
+            plt.title("Single Sided FFT Magnitude")
+            plt.grid(True)
+            plt.xlabel('freq (Hz)')
+            plt.ylabel('dBFS')
+
+            # gives space for axis labels
+            plt.subplots_adjust(hspace=.75) 
+
+            plt.show()
+
+            # convert type back to whatever it was
+            self.type = _type
+
+            
+        elif (self._type == "t"):
             plt.plot(self.t(), self._data)
             plt.title("Time Domain Plot")
             plt.grid(True)
@@ -267,6 +298,57 @@ class audioSample(object):
 
         self.applyInDomain('t', setOffset)
 
+    
+    def removeFreqs(self, freqs=[], freqRange=[]):
+        self.changeFreqs("rm", freqs=freqs, freqRange=freqRange)
+
+
+    def changeFreqs(self, value, freqs=[], freqRange=[], dbOnly=False):
+        """
+        can give both
+        
+        """
+        print self._data
+        # ensure data is in freq domain
+        assert self._type != "t", "data is in time domain. use audioSample.toFreq() or audioSample.toDB() to convert to frequency domain"
+
+
+        # allows for single frequency input
+        if isinstance(freqs, (int, float)): freqs = [freqs]
+
+        # extract bounds for frequency range
+        if freqRange: minF, maxF = freqRange[:2]
+        else: minF, maxF = -1,-1
+
+
+        if dbOnly:
+            assert self._type == "db", "db frequency change attemped with data not in db"
+            
+                    
+        # allows for impled 0 imaginary part
+        if not isinstance(value, complex) and value != "rm": value = complex(value, 0)
+
+        assert self._type != "f" or abs(value) > 0, "cannot set complex amplitude to 0"
+
+        # collect indexes to delete and delete all at once
+        if value == "rm": toDelete = []
+
+        for i, f in enumerate(self.f()):
+            if f in freqs or minF <= f <= maxF:
+                
+                if value == "rm": 
+                    toDelete.append(i)
+                else:  
+                    if dbOnly: 
+                        value = complex(value.real, self._data[i].imag) # adjust just the real part
+                    self._data[i] = value        
+
+        if value == "rm":
+            print(toDelete)
+            self.freqs = np.delete(self.freqs, toDelete) # remove from frequencies
+            self._data = np.delete(self._data, toDelete) # remove associated data from tf
+
+        print self._data
 
     def normalize(self):
         #normalize to [-1,1] for time data and 0dBFS for dB data

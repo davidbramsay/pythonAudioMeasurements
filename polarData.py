@@ -1,9 +1,10 @@
 import cPickle as pickle
-from pythonAudioMeasurements import pyStep
-from pythonAudioMeasurements.audioSample import audioSample
+import pyStep
+from audioSample import audioSample
+from math import atan
 
 
-class PolarData:
+class polarData:
 
     def __init__(self, filename):
 
@@ -13,23 +14,19 @@ class PolarData:
         self.angles = loadedFile[0]["angles"] 
 
         # dictionary mapping int value of each angle to its appropriate audioSample
-        self.audioData = {a : m for a,m in zip (self.angles, loadedFile[0]["measurements"])}
+        self.audioData = dict(zip (self.angles, loadedFile[0]["measurements"]))
     
-    def plotAngle(self, theta):
+    def plotAngle(self, theta,both=False):
         
         if theta not in self.audioData:
+            oldTheta = theta
             theta = self.getClosestAngle(theta)
-            print str(theta) + " not in data set. using closest given angle: %d" % theta
-            
+            print "%d not in data set. using closest given angle: %d" % (oldTheta, theta)            
 
 
         #### todo : add function to plot both the time and frequency responces in one figure
 
-        self.audioData[theta].toDb()
-        self.audioData[theta].plot()
-
-        self.audioData[theta].toTime()
-        self.audioData[theta].plot()
+        self.audioData[theta].plot(both=both)
 
     def replaceBadAngles(self, thetaLower, thetaUpper, thetaAxis=0):
         """
@@ -55,13 +52,36 @@ class PolarData:
             # replace the given angle 
             self.audioData[theta] = self.audioData[thetaReplace]
 
-
-
-    def setFreqs():
-        """
-        eliminate give frequencies form the data set
-        """
     
+    def removeFreqs(self, freqs=[], freqRange=[]):
+        self.changeFreqs("rm", freqs=freqs, freqRange=freqRange)
+    
+    def changeFreqs(self, value, freqs=[], freqRange=[], mode=None):
+        """
+        change to frequency domain
+        apply the change function with remove argument
+        cylce through all audioSamples in the given datafile
+
+        always go to Db
+        convert value as necessary to Db
+        """
+
+        # don't convert all data into f for frequency changes
+        # convert input value instead
+        if mode == "f": value = complex(abs(value), atan(value.imag/value.real))
+
+        for audioSamp in self.audioData.values():
+            _type = audioSamp._type # to convert back to 
+
+            audioSamp.toDb() # ensure data in freq domain 
+
+            audioSamp.changeFreqs(value, freqs=freqs, freqRange=freqRange, dbOnly=(mode=="db-only"))
+
+            audioSamp.type = _type # convert back to original type
+            
+
+    def setType(self, _type):
+        for audioSamp in self.audioData.values(): audioSamp.type = _type
 
     def getAngles(self):
         return self.angles

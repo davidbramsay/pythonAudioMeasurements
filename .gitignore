@@ -1,2 +1,5 @@
 *.pyc
 data/*
+.gitignore
+tests.py
+tests_.py
