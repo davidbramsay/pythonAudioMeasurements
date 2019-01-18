@@ -299,16 +299,33 @@ class audioSample(object):
         self.applyInDomain('t', setOffset)
 
     
-    def removeFreqs(self, freqs=[], freqRange=[]):
+    def removeFreqs(self, freqs=[], freqRange=[-1,-1]):
         self.changeFreqs("rm", freqs=freqs, freqRange=freqRange)
 
 
-    def changeFreqs(self, value, freqs=[], freqRange=[], dbOnly=False):
+    def changeFreqs(self, value, freqs=[], freqRange=[-1,-1], dbOnly=False):
         """
-        can give both
+        Changes data values for given frequencies. 
+        
+        Frequencies can be given as discrete frequencies or as a range. If given both descrete
+        values and a range are given both sets of frequencies will be adjusted. 
+
+        Data in type "f" cannot be set to 0. 
+
+
+        Args:
+        value (int, float, complex, str): new data value for given frequency
+            > using the "rm" value will result in the frequency being removed from the data entirely
+            > can be entered as real number or complex
+        freqs (int, float, list): discrete frequencies to be altered
+        freqRange (list): first two indexes used as lower bound and upper bound respectively. 
+                          Range is inclusive on both ends
+                          Defaults to (-1, -1) to which no frequencies will match
+        dbOnly (bool): if true, just the magnitude of the frequency will be set to the real part of value, and the phase
+
         
         """
-        print self._data
+
         # ensure data is in freq domain
         assert self._type != "t", "data is in time domain. use audioSample.toFreq() or audioSample.toDB() to convert to frequency domain"
 
@@ -317,8 +334,7 @@ class audioSample(object):
         if isinstance(freqs, (int, float)): freqs = [freqs]
 
         # extract bounds for frequency range
-        if freqRange: minF, maxF = freqRange[:2]
-        else: minF, maxF = -1,-1
+        minF, maxF = freqRange[:2]
 
 
         if dbOnly:
@@ -348,7 +364,7 @@ class audioSample(object):
             self.freqs = np.delete(self.freqs, toDelete) # remove from frequencies
             self._data = np.delete(self._data, toDelete) # remove associated data from tf
 
-        print self._data
+
 
     def normalize(self):
         #normalize to [-1,1] for time data and 0dBFS for dB data

@@ -8,6 +8,21 @@ class polarData:
 
     def __init__(self, filename):
 
+
+        """
+        loads in data from polarPlot
+
+        Args: 
+        filename (str): path to pickled file from polarPlot
+
+        Instance variables:
+        self.filename = the given file location at the creation of the object
+        self.angles = list of all the angles for which data was collected
+        self.audioData = dictionary mapping angle to the audioSample collected        
+        """
+
+        self.filename = filename
+
         with open(filename, "rb") as file_:
             loadedFile = pickle.load(file_)
         
@@ -28,13 +43,14 @@ class polarData:
 
         self.audioData[theta].plot(both=both)
 
-    def replaceBadAngles(self, thetaLower, thetaUpper, thetaAxis=0):
+    def replaceBadAngles(self, thetaLower, thetaUpper, thetaAxis=0, thetas =[]):
         """
-        Replace the data contained in theta1, theta2 with symmetric data
+        Replace the data contained in (thetaLower, thetaUpper) (inclusive) with symmetric data
         reflected over thetaAxis
 
-        must input angles as positive numbers
-        cannot wrap around zero (cannot do a range of (-30, 30))
+        thetaLower (int): lower bound for the theta range to reflect
+        thetaUpper  (int): upper bound for the theta rang to reflect
+        thetaAxis (int - default=0): axis about which to reflect the given angle 
         """
 
         assert thetaLower >= 0 and thetaUpper >= 0, "Angles must be positive and cannot wrap around 0"
@@ -43,7 +59,7 @@ class polarData:
         for theta in self.angles:
 
             # only edit angles within range
-            if not thetaUpper <= theta <= thetaUpper: continue
+            if not thetaLower <= theta <= thetaUpper and theta not in thetas: continue
 
             
             thetaReplace = pyStep.validifyLoc(thetaAxis + (thetaAxis-theta)) # reflect angle theta over axis
@@ -54,16 +70,21 @@ class polarData:
 
     
     def removeFreqs(self, freqs=[], freqRange=[]):
+        """
+        Uses changeFreqs to remove the given frequencies from the data set
+        """
         self.changeFreqs("rm", freqs=freqs, freqRange=freqRange)
     
     def changeFreqs(self, value, freqs=[], freqRange=[], mode=None):
         """
-        change to frequency domain
-        apply the change function with remove argument
-        cylce through all audioSamples in the given datafile
+        Uses the audioSample.changeFreqs(self, value, freqs=[], freqRange=[-1,-1], dbOnly=False)
+        to adjust values of specifed frequencies within the data at all angles. Autimatically 
+        changes data to dB for change and then converts back to original type. 
 
-        always go to Db
-        convert value as necessary to Db
+        mode (str): 
+            > if "f" - input value is in complex amplitude - converts value to polar coordinates before
+              changing
+            > if "db-only" - input is meant to effect the magnitude of a frequency only (not the phase)
         """
 
         # don't convert all data into f for frequency changes
@@ -93,9 +114,14 @@ class polarData:
     def checkAngle(self, theta):
         if theta not in self.audioData:
             print str(theta) + " not in data set. using closest given angle"
-            return self.getClosestAngle(theta)
+        
+        return self.getClosestAngle(theta)
+
 
     def getClosestAngle(self, theta):
+        """
+        Returns the value of the closest angle to theta in the dataset in degrees
+        """
 
         if theta in self.angles: return theta
 
