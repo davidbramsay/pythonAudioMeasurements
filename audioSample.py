@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 import audioExtras as ae
+import copy
 
 """
 audioSample stores audio with information about its representation (time, freq, db) to easily
@@ -79,6 +80,7 @@ class audioSample(object):
     def __init__(self, dataArray = [], type = "t", Fs = 44100):
         self._data = dataArray
         self._fs = Fs
+        self._fs_rm = []
 
         assert (type.lower() in ("t", "f", "db")), "type invalid, use t, f, or db"
         self._type = type.lower()
@@ -92,6 +94,18 @@ class audioSample(object):
             "transform to time is non-deterministic, " +
             "it will be assumed that the time domain " +
             "length of the signal is 2*len(data)-1 ")
+
+
+    def copy(self):
+        """
+        Returns a new audioSample instance that is a copy of self
+        The data, type, and removed frequencies will be preserved
+
+        data, and rempoved frequencies arrays are deepcopied
+        """
+        newAudioSample = audioSample(copy.deepcopy(self._data), type=self.type, Fs=self._fs)
+        newAudioSample._fs_rm = copy.deepcopy(self._fs_rm)
+        return newAudioSample
 
 
     def f(self):
@@ -114,6 +128,21 @@ class audioSample(object):
         return np.linspace(0.0, (float(self._tLength)-1.0)/self._fs, self._tLength)
 
 
+    def __len__(self): return len(self._data)
+
+    def __iter__(self):
+        for val in self._data:
+            yield val
+
+
+    def update(self):
+        variables = vars(self).keys()
+        if "_type" not in variables: self._type = vars(self)["type"]
+        if "_data" not in variables: self._data = vars(self)["data"]
+        if "_fs" not in variables: self._fs = vars(self)["fs"]
+        if "_fs_rm" not in variables: self._fs_rm = []
+
+
     @property
     def data(self): return self._data
 
@@ -124,6 +153,9 @@ class audioSample(object):
 
     @property
     def type(self): return self._type
+
+    @property
+    def removed(self): return self._fs_rm
 
 
     @fs.setter
@@ -157,6 +189,8 @@ class audioSample(object):
                 raise TypeError("instance.type is invalid!")
         else:
             print 'already of that type'
+
+
 
     def toTime(self):
         if (self._type == "f"):
@@ -269,6 +303,7 @@ class audioSample(object):
             plt.show()
 
 
+
     def PDF(self, ac_couple=False):
         #plot the PDF
         def plotPDF():
@@ -308,22 +343,31 @@ class audioSample(object):
         Changes data values for given frequencies. 
         
         Frequencies can be given as discrete frequencies or as a range. If given both descrete
-        values and a range are given both sets of frequencies will be adjusted. 
+        values and a range are given both sets of frequencies will be adjusted. If a frequency is 
+        neither in the signal nor within the given range, it will be ignored
 
         Data in type "f" cannot be set to 0. 
+
+        If given value is floating point 0, then it will be counted as removing that frequency
+
+
 
 
         Args:
         value (int, float, complex, str): new data value for given frequency
-            > using the "rm" value will result in the frequency being removed from the data entirely
+            > using the "rm" value will set that frequency amplitude equal to 0
             > can be entered as real number or complex
         freqs (int, float, list): discrete frequencies to be altered
         freqRange (list): first two indexes used as lower bound and upper bound respectively. 
                           Range is inclusive on both ends
                           Defaults to (-1, -1) to which no frequencies will match
-        dbOnly (bool): if true, just the magnitude of the frequency will be set to the real part of value, and the phase
+        dbOnly (bool): if true, just the magnitude of the frequency will be set to the real part of value, and the phase will be left alone
 
-        
+        Returns:
+        changed
+            > array of frequencies changed on THIS PASS
+            
+            
         """
 
         # ensure data is in freq domain
@@ -338,31 +382,39 @@ class audioSample(object):
 
 
         if dbOnly:
-            assert self._type == "db", "db frequency change attemped with data not in db"
+            assert self._type == "db", "db frequency change attemped with data not in db. Use audioSample.toDB() to change data to db"
             
                     
-        # allows for impled 0 imaginary part
+        # allows for implied 0 imaginary part
         if not isinstance(value, complex) and value != "rm": value = complex(value, 0)
 
         assert self._type != "f" or abs(value) > 0, "cannot set complex amplitude to 0"
 
-        # collect indexes to delete and delete all at once
-        if value == "rm": toDelete = []
+        # frequencies changed in this process
+        changed = []
+
+        
+        set_value = 1e-12 if value == "rm" else complex(value)
+
+        if value == "rm": self.toFreq()
 
         for i, f in enumerate(self.f()):
             if f in freqs or minF <= f <= maxF:
                 
-                if value == "rm": 
-                    toDelete.append(i)
-                else:  
-                    if dbOnly: 
-                        value = complex(value.real, self._data[i].imag) # adjust just the real part
-                    self._data[i] = value        
+                # store each frequency removed
+                if abs(set_value) < 1e-15 or value == "rm": 
+                    self._fs_rm.append(f)
+                    changed.append(f)
 
-        if value == "rm":
-            print(toDelete)
-            self.freqs = np.delete(self.freqs, toDelete) # remove from frequencies
-            self._data = np.delete(self._data, toDelete) # remove associated data from tf
+                # adjust mag, preserve phase
+                if dbOnly: 
+                    set_value = complex(set_value.real, self._data[i].imag) 
+                    
+                self._data[i] = set_value    
+
+        return changed    
+
+            
 
 
 
