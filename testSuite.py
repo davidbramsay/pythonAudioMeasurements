@@ -3,6 +3,7 @@ from polarData import polarData
 import numpy as np
 from math import pi, atan
 import matplotlib.pyplot as plt
+import cPickle as pickle
 
 # rad/samp = (sec/samp)*(cycles/sce)*(rad/cycle) = 2*pi*f/fs
 
@@ -168,21 +169,69 @@ Things to fix:
 """
 
 
-pd = polarData("reference_mic_rokit8_3ft_fortest.pkl")
+pd = polarData("vm1010_test.pkl")
 
 
 
 def plotAngle():
-    pd.test_plot_angle(0, both=True)
+    pd.plotAngle(0, both=True)
+    pd.plotAngle(65, both=True)
 
-def test_plot_freq():
+def test_plot_freqs():
     pd.plotFreqs([400, 1000, 1500])
-
 
 def change_freqs_theta():
-    pd.changeFreqs(0.5, thetaRange=[30, 50], freqRange=[380, 500])
+    pd.plotFreqs([400, 1000, 1500])
+    print(pd.changeFreqs(-13, thetaRange=[30, 50], freqRange=[380, 500]))
     pd.plotFreqs([400, 1000, 1500])
 
+def change_freqs():
+    pd.plotFreqs([400, 1000, 1500])
+    print(pd.changeFreqs(-13, freqRange=[380, 500]))
+    pd.plotFreqs([400, 1000, 1500])
+
+def replace_axis():
+    pd.plotFreqs([100, 1000, 1250])
+    pd.replaceAnglesAxis(5, 180)
+    pd.plotFreqs([100, 1000, 1250])
+
+def replace_angle():
+    pd.plotFreqs([100, 1000, 1250])
+    pd.replaceAngle(180, 0)
+    pd.plotFreqs([100, 1000, 1250])
 
 
-change_freqs_theta()
+def getters():
+    print pd.getFreq()
+    print pd.getData
+    print pd.getData(0)
+    print pd.getAngles
+    print pd.getType()
+
+def setters():
+    print pd.getType()
+    pd.setType("f")
+    print pd.getType()
+
+
+def test_save():
+    pd.changeFreqs("rm", thetaRange=[30, 50], freqRange=[380, 500])
+    pd.save("test_save.pkl")
+
+    with open("test_save.pkl", "rb") as f:
+        tester = pickle.load(f)
+    
+    print(pd.getAngles() == tester.getAngles())
+
+    pd.plotFreqs([400, 1000, 1500])
+    tester.plotFreqs([400, 1000, 1500])
+
+    
+
+def test_remove():
+    pd.plotFreqs([400, 1000, 1500])
+    print(pd.changeFreqs("rm", thetaRange=[30, 50], freqRange=[380, 500]))
+    print(pd.getRemoved())
+    pd.plotFreqs([400, 1000, 1500])
+
+test_save()

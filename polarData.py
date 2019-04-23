@@ -55,7 +55,7 @@ class polarData:
 
         with open(filename, "rb") as file_:
             loadedFile = pickle.load(file_)
-        
+
         self.angles = loadedFile[0]["angles"] 
 
         # dictionary mapping int value of each angle to its appropriate audioSample
@@ -91,144 +91,7 @@ class polarData:
         print "displaying plot for: %d"%theta
 
         self.audioData[theta].plot(both=both)
-
-    def replaceAnglesAxis(self, thetaLower, thetaUpper, thetaAxis=0, thetas =[]):
-        """
-        Replace the data contained in (thetaLower, thetaUpper) (inclusive) with symmetric data
-        reflected over thetaAxis
-
-        thetaLower (int): lower bound for the theta range to reflect
-        thetaUpper  (int): upper bound for the theta rang to reflect
-        thetaAxis (int - default=0): axis about which to reflect the given angle 
-        """
-
-        assert thetaLower >= 0 and thetaUpper >= 0, "Angles must be positive and cannot wrap around 0"
-        assert not (thetaLower < thetaAxis < thetaUpper), "Axis of reflection within theta range given. Set reflection axis with argument thetaAxis "
     
-        for theta in self.angles:
-
-            # only edit angles within range
-            if not thetaLower <= theta <= thetaUpper and theta not in thetas: continue
-
-            
-            thetaReplace = Stepper.validifyLoc(thetaAxis + (thetaAxis-theta)) # reflect angle theta over axis
-            thetaReplace = self.getClosestAngle(thetaReplace) # find the closest angle to reflected angle
-
-            # replace the given angle 
-            self.audioData[theta] = self.audioData[thetaReplace]
-
-    
-    def replaceAngle(self, thetaReplace, thetaReplaceWith):
-        """
-        Sets the audioSample at thetaReplace to copy of the audioSample currently 
-        at thetaReplaceWith 
-        """
-        assert (thetaReplace in self.angles), "given remove angle not in this polarData instance use polarData.getAngles() to see list of angles"
-        assert (thetaReplaceWith in self.angles), "given replace angle not in this polarData instance use polarData.getAngles() to see list of angles"
-
-        self.audioData[thetaReplace] = self.audioData[thetaReplaceWith].copy()
-        
-
-    
-    def removeFreqsAtTheta(self, theta, freqs=[], freqRange=[]):
-        """
-        Uses changeFreqs to remove the given frequencies from the data set
-        """
-        self.changeFreqs("rm", theta, freqs=freqs, freqRange=freqRange)
-
-
-    
-    def changeFreqsAtTheta(self, value, theta, freqs=[], freqRange=[], mode=None):
-        """
-        Uses the audioSample.changeFreqs(self, value, freqs=[], freqRange=[-1,-1], dbOnly=False)
-        to adjust values of specifed frequencies within the data at all angles. Autimatically 
-        changes data to dB for change and then converts back to original type. 
-
-        mode (str): 
-            > if "f" - input value is in complex amplitude - converts value to polar coordinates before
-              changing
-            > if "db-only" - input is meant to effect the magnitude of a frequency only (not the phase)
-            > if None, it assumes input value is given in db format
-
-
-        Returns:
-         > frequencies changed on this pass through the audioSamples
-        """
-
-        # convert input value if given in complex amplitude
-        if mode == "f": value = complex(abs(value), atan(value.imag/value.real))
-
-        theta = self.getClosestAngle(theta)
-
-        audioSamp =  self.audioData[theta]
-        
-        _type = audioSamp._type # to convert back to 
-
-        audioSamp.toDb() # ensure data in mag, phase domain 
-
-        changed = audioSamp.changeFreqs(value, freqs=freqs, freqRange=freqRange, dbOnly=(mode=="db-only"))
-
-        audioSamp.type = _type # convert back to original type
-
-        return changed
-
-
-    def changeFreqs(self, value, thetas=[], thetaRange=[-1,-1], freqs=[], freqRange=[], mode=None):
-
-        """
-        changes the frequencies of the audioSamples at the given angles, which can be input in exact angles or
-        can be input as a range
-
-
-        if the no thetas nor a range are given, the changes will be applied to the audioSamples at all thetas
-        """
-
-
-        # if no angles given, it will alter the frequencies for all thetas
-        if not thetas and thetaRange == [-1,-1]: thetaRange = [0,360]
-
-
-        upperTheta, lowerTheta = thetaRange[:2]
-
-        for theta in self.angles:
-            if theta in thetas or lowerTheta <= theta <= upperTheta:
-                changed = self.changeFreqsAtTheta(value, theta, freqs=freqs, freqRange=freqRange, mode=mode)
-
-
-        if abs(value) < 1e-16 or value == "rm":
-            self._fs_rm.extend(changed)
-
-        return changed
-
-    def setAngle(self, theta, audioSample):
-        assert theta in self.angles, "given angle not in this audioSample use audioSample.getAngles() to see a lit of containined angles"
-        assert self.audioData[0].fs == audioSample.fs and len(self.audioData[0]) == len(audioSample), "all audiosamples in a polarData instance must have the same fs and length"
-        self.audioData[theta] = audioSample
-            
-
-    def setType(self, _type):
-        for audioSamp in self.audioData.values(): audioSamp.type = _type
-
-    def getAngles(self):
-        return self.angles
-
-    def getFreq(self, theta=0):
-        return self.audioData[theta].f()
-
-    def getRemoved(self):
-        return self._fs_rm
-
-    def getData(self, theta=None):
-        """
-        Get audioSample data for this object at specified angle. 
-        If no angle specified, all of the data will be returned. 
-        """
-        if theta is None: return self.audioData
-
-        theta = self.getClosestAngle(theta)
-        return self.audioData[theta]
-        
-            
     def plotFreqs(self, freqs=[]):
         """
         Takes measured data as specified below and plots it using matplotlib
@@ -312,7 +175,138 @@ class polarData:
         #plt.savefig("fig_temp" + str())
         plt.show()
 
+    def replaceAnglesAxis(self, thetaLower, thetaUpper, thetaAxis=0, thetas =[]):
+        """
+        Replace the data contained in (thetaLower, thetaUpper) (inclusive) with symmetric data
+        reflected over thetaAxis
 
+        thetaLower (int): lower bound for the theta range to reflect
+        thetaUpper  (int): upper bound for the theta rang to reflect
+        thetaAxis (int - default=0): axis about which to reflect the given angle 
+        """
+
+        assert thetaLower >= 0 and thetaUpper >= 0, "Angles must be positive and cannot wrap around 0"
+        assert not (thetaLower < thetaAxis < thetaUpper), "Axis of reflection within theta range given. Set reflection axis with argument thetaAxis "
+    
+        for theta in self.angles:
+
+            # only edit angles within range
+            if not thetaLower <= theta <= thetaUpper and theta not in thetas: continue
+
+            
+            thetaReplace = Stepper.validifyLoc(thetaAxis + (thetaAxis-theta)) # reflect angle theta over axis
+            thetaReplace = self.getClosestAngle(thetaReplace) # find the closest angle to reflected angle
+
+            # replace the given angle 
+            self.audioData[theta] = self.audioData[thetaReplace]
+
+    def replaceAngle(self, thetaReplace, thetaReplaceWith):
+        """
+        Sets the audioSample at thetaReplace to copy of the audioSample currently 
+        at thetaReplaceWith 
+        """
+        assert (thetaReplace in self.angles), "given remove angle not in this polarData instance use polarData.getAngles() to see list of angles"
+        assert (thetaReplaceWith in self.angles), "given replace angle not in this polarData instance use polarData.getAngles() to see list of angles"
+
+        self.audioData[thetaReplace] = self.audioData[thetaReplaceWith].copy()
+        
+    def removeFreqsAtTheta(self, theta, freqs=[], freqRange=[]):
+        """
+        Uses changeFreqs to remove the given frequencies from the data set
+        """
+        self.changeFreqs("rm", theta, freqs=freqs, freqRange=freqRange)
+
+    def changeFreqsAtTheta(self, value, theta, freqs=[], freqRange=[], mode=None):
+        """
+        Uses the audioSample.changeFreqs(self, value, freqs=[], freqRange=[-1,-1], dbOnly=False)
+        to adjust values of specifed frequencies within the data at all angles. Autimatically 
+        changes data to dB for change and then converts back to original type. 
+
+        mode (str): 
+            > if "f" - input value is in complex amplitude - converts value to polar coordinates before
+              changing
+            > if "db-only" - input is meant to effect the magnitude of a frequency only (not the phase)
+            > if None, it assumes input value is given in db format
+
+
+        Returns:
+         > frequencies changed on this pass through the audioSamples
+        """
+
+        # convert input value if given in complex amplitude
+        if mode == "f": value = complex(abs(value), atan(value.imag/value.real))
+
+        theta = self.getClosestAngle(theta)
+
+        audioSamp =  self.audioData[theta]
+        
+        _type = audioSamp._type # to convert back to 
+
+        audioSamp.toDb() # ensure data in mag, phase domain 
+
+        changed = audioSamp.changeFreqs(value, freqs=freqs, freqRange=freqRange, dbOnly=(mode=="db-only"))
+
+        audioSamp.type = _type # convert back to original type
+
+        return changed
+
+    def changeFreqs(self, value, thetas=[], thetaRange=[-1,-1], freqs=[], freqRange=[], mode=None):
+
+        """
+        changes the frequencies of the audioSamples at the given angles, which can be input in exact angles or
+        can be input as a range
+
+
+        if the no thetas nor a range are given, the changes will be applied to the audioSamples at all thetas
+        """
+
+        changed = set()
+
+        # if no angles given, it will alter the frequencies for all thetas
+        if not thetas and thetaRange == [-1,-1]: thetaRange = [0,360]
+
+        lowerTheta, upperTheta = thetaRange[:2]
+
+        for theta in self.angles:
+            
+            if theta in thetas or lowerTheta <= theta <= upperTheta:                
+                changed.update(self.changeFreqsAtTheta(value, theta, freqs=freqs, freqRange=freqRange, mode=mode))
+
+        if value == "rm" or abs(value) < 1e-16:
+            self._fs_rm.extend(changed)
+
+        return changed
+
+    def setAngle(self, theta, audioSample):
+        assert theta in self.angles, "given angle not in this audioSample use audioSample.getAngles() to see a lit of containined angles"
+        assert self.audioData[0].fs == audioSample.fs and len(self.audioData[0]) == len(audioSample), "all audiosamples in a polarData instance must have the same fs and length"
+        self.audioData[theta] = audioSample
+            
+    def setType(self, _type):
+        for audioSamp in self.audioData.values(): audioSamp.type = _type
+
+    def getAngles(self):
+        return self.angles
+
+    def getFreq(self, theta=0):
+        return self.audioData[theta].f()
+
+    def getRemoved(self):
+        return self._fs_rm
+
+    def getData(self, theta=None):
+        """
+        Get audioSample data for this object at specified angle. 
+        If no angle specified, all of the data will be returned. 
+        """
+        if theta is None: return self.audioData
+
+        theta = self.getClosestAngle(theta)
+        return self.audioData[theta]
+
+    def getType(self):
+        return self.audioData[0].type
+    
     def getClosestAngle(self, theta):
         """
         Returns the value of the closest angle to theta in the dataset in degrees

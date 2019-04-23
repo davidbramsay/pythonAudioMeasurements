@@ -80,8 +80,7 @@ class audioSample(object):
     def __init__(self, dataArray = [], type = "t", Fs = 44100):
         self._data = dataArray
         self._fs = Fs
-        self._fs_rm = []
-
+        self._fs_rm = set()
         assert (type.lower() in ("t", "f", "db")), "type invalid, use t, f, or db"
         self._type = type.lower()
 
@@ -140,7 +139,7 @@ class audioSample(object):
         if "_type" not in variables: self._type = vars(self)["type"]
         if "_data" not in variables: self._data = vars(self)["data"]
         if "_fs" not in variables: self._fs = vars(self)["fs"]
-        if "_fs_rm" not in variables: self._fs_rm = []
+        if "_fs_rm" not in variables: self._fs_rm = set()
 
 
     @property
@@ -169,7 +168,7 @@ class audioSample(object):
 
 
     @type.setter
-    def type(self, value):
+    def type(self, value, verbose=False):
         assert (value.lower() in ("t", "f", "db")), "type invalid, use t, f, or db"
 
         new_type = value.lower()
@@ -177,22 +176,22 @@ class audioSample(object):
 
         if new_type != current_type:
             if new_type == "t":
-                print 'converted to time'
+                if verbose: print 'converted to time'
                 self.toTime()
             elif new_type == "f":
-                print 'converted to freq'
+                if verbose: print 'converted to freq'
                 self.toFreq()
             elif new_type == "db":
-                print 'converted to db'
+                if verbose: print 'converted to db'
                 self.toDb()
             else:
                 raise TypeError("instance.type is invalid!")
         else:
-            print 'already of that type'
+            if verbose: print 'already of that type'
 
 
 
-    def toTime(self):
+    def toTime(self, verbose=False):
         if (self._type == "f"):
             self._data = np.fft.irfft(self._data, self._tLength)
             self._type = "t"
@@ -202,13 +201,13 @@ class audioSample(object):
             self.toTime()
 
         elif (self.type == "t"):
-            print "already in time"
+            if verbose: print "already in time"
 
         else:
             raise TypeError("instance.type is invalid!")
 
 
-    def toFreq(self):
+    def toFreq(self, verbose=False):
         if (self._type == "t"):
             self._data = np.fft.rfft(self._data)
             self._type = "f"
@@ -219,13 +218,13 @@ class audioSample(object):
             self._type = "f"
 
         elif (self._type == "f"):
-            print "already in freq"
+            if verbose: print "already in freq"
 
         else:
             raise TypeError("instance.type is invalid!")
 
 
-    def toDb(self):
+    def toDb(self, verbose=False):
         if (self._type == "f"):
             mag = 20*np.log10(np.abs(self._data))
             phase = np.angle(self._data)
@@ -237,7 +236,7 @@ class audioSample(object):
             self.toDb()
 
         elif (self._type == "db"):
-            print "already in db"
+            if verbose: print "already in db"
 
         else:
             raise TypeError("instance.type is invalid!")
@@ -400,11 +399,13 @@ class audioSample(object):
 
         for i, f in enumerate(self.f()):
             if f in freqs or minF <= f <= maxF:
+
+                changed.append(f)
                 
                 # store each frequency removed
                 if abs(set_value) < 1e-15 or value == "rm": 
-                    self._fs_rm.append(f)
-                    changed.append(f)
+                    self._fs_rm.add(f)
+                    
 
                 # adjust mag, preserve phase
                 if dbOnly: 
