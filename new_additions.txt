@@ -1,0 +1,7 @@
+> verbosity
+	- it not will not default to printing things out
+	  when changing the type, but rather that option 
+	  can be passed in my making the "verbosity" key
+	  word true
+
+

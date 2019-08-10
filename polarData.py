@@ -1,7 +1,34 @@
 import cPickle as pickle
-import pyStep
+from pyStep import Stepper
 from audioSample import audioSample
 from math import atan
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import interpolate
+
+import sys
+sys.path.append('../')
+
+"""
+
+To do:
+
+> generate a polar plot for the given data
+    > inputs - frequencies to be shown - this shoul dhave some set of default values
+
+
+
+
+
+Done:
+> replace angle in one place with data from another reflected across some axis
+> change or remove frequencies in any format for all angles
+> get the values of the audio sample array at a given value
+> save the current polarData instance to a pickle (usde to save the alterations that have been made)
+> change frequency information for a specific angle
+> change frequency informaiton for all angles
+
+"""
 
 
 class polarData:
@@ -18,18 +45,41 @@ class polarData:
         Instance variables:
         self.filename = the given file location at the creation of the object
         self.angles = list of all the angles for which data was collected
-        self.audioData = dictionary mapping angle to the audioSample collected        
+        self.audioData = dictionary mapping angle to the audioSample collected    
+        self._fs_rm = frequencies that have been removed from all audioSamples
+                      polarData level    
         """
 
         self.filename = filename
+        self._fs_rm  = []
 
         with open(filename, "rb") as file_:
             loadedFile = pickle.load(file_)
-        
+
         self.angles = loadedFile[0]["angles"] 
 
         # dictionary mapping int value of each angle to its appropriate audioSample
         self.audioData = dict(zip (self.angles, loadedFile[0]["measurements"]))
+
+        self.assertValidData()
+
+    def assertValidData(self):
+        """
+        Asserts that all audioSamples are of the same sampling frequency and length (to preserve the integrity
+        of the fourrier analysis across angles)
+        """
+        lengths = set()
+        fs = set()
+
+        for audioSamp in self.audioData.values():
+            audioSamp.update()
+            lengths.add(len(audioSamp.data))
+            fs.add(audioSamp.fs)
+
+        self.setType("Db")
+
+        assert len(lengths) == 1, "error loading in pickle: varying DATA ARRAY LENGTHS. audioData must be in the format output of polar-measurement and all audioSamples must have the same sampling frequency and length of data array"
+        assert len(fs) == 1, "error loading in pickle: varying SAMPLING FREQUENCIES. audioData must be in the format output of polar-measurement and all audioSamples must have the same sampling frequency and length of data array"
     
     def plotAngle(self, theta,both=False):
         
@@ -38,12 +88,94 @@ class polarData:
             theta = self.getClosestAngle(theta)
             print "%d not in data set. using closest given angle: %d" % (oldTheta, theta)            
 
-
-        #### todo : add function to plot both the time and frequency responces in one figure
+        print "displaying plot for: %d"%theta
 
         self.audioData[theta].plot(both=both)
+    
+    def plotFreqs(self, freqs=[]):
+        """
+        Takes measured data as specified below and plots it using matplotlib
+        on a polar axes
 
-    def replaceBadAngles(self, thetaLower, thetaUpper, thetaAxis=0, thetas =[]):
+        Args:
+        measured_data (dict): contains already-measured data in the format
+                            {frequency1 : [(angle1 in degrees, amplitude1), ...], ....}
+        """
+
+        # suplot on which all data will be places
+        ax = plt.subplot(1, 1, 1, projection = "polar")
+
+        
+
+
+        ###
+        # PULL OUT THE INDEX OF THE FREQS
+        ###
+
+        available_freqs = self.audioData[self.angles[0]].f()
+
+        f_indeces = [-1]*len(freqs)
+        f_difs = [1e12]*len(freqs)
+
+        # find the closest frequency to each of the given input frequencies
+        for i in range(len(available_freqs)):
+            for j in range(len(freqs)):
+                if abs(freqs[j] - available_freqs[i]) < f_difs[j]:
+                    f_indeces[j] = i
+                    f_difs[j] = abs(freqs[j] - available_freqs[i])
+
+        # strings containing the names of the frequencies to be utilized
+        legend = [str(int(available_freqs[i])) for i in f_indeces]
+
+        # make sure all data in Db
+        oldType = self.audioData[0].type 
+        self.setType("Db")
+
+
+        # loop through freqs
+        for i in f_indeces:
+            # loop through angles
+            r = [self.audioData[phi].data[i].real for phi in self.angles]
+
+            # print(freq, data)
+
+            # unpack the data
+            # comes out in tuple
+            theta = tuple(self.angles)
+
+            # add to ends to make plot loop
+            # all the way around
+            theta += (360,)
+            r += (r[0],)
+
+
+            theta = [t*np.pi/180 for t in theta] # convert to rad
+
+
+            # linear interpolation between points
+            """ perhaps a different interpolation would be better
+                linear interpolation in polar leads to naturally out-swooping arcs"""
+            f = interpolate.interp1d(theta, r)
+
+            # create thetas
+            theta_plot = np.arange(0,2*np.pi, 0.05)
+
+            # using function tp interpolate r-points for
+            # smoothness of output graphic
+            r_plot = f(theta_plot)
+
+            # plot this set of points
+            ax.plot(theta_plot, r_plot)
+
+        # add graphic title
+        ax.set_title("POLARDATA RESPONSE AT VARIOUS FREQUENCIES")
+        ax.grid(True) # turn on grid lines
+        #ax.set_rticks(np.arange(0,50, 10)) # add tick marks
+        ax.legend(legend, loc = "upper left") # create key
+        #plt.savefig("fig_temp" + str())
+        plt.show()
+
+    def replaceAnglesAxis(self, thetaLower, thetaUpper, thetaAxis=0, thetas =[]):
         """
         Replace the data contained in (thetaLower, thetaUpper) (inclusive) with symmetric data
         reflected over thetaAxis
@@ -62,20 +194,29 @@ class polarData:
             if not thetaLower <= theta <= thetaUpper and theta not in thetas: continue
 
             
-            thetaReplace = pyStep.validifyLoc(thetaAxis + (thetaAxis-theta)) # reflect angle theta over axis
-            thetaReplace = getClosestAngle(thetaReplace) # find the closest angle to reflected angle
+            thetaReplace = Stepper.validifyLoc(thetaAxis + (thetaAxis-theta)) # reflect angle theta over axis
+            thetaReplace = self.getClosestAngle(thetaReplace) # find the closest angle to reflected angle
 
             # replace the given angle 
             self.audioData[theta] = self.audioData[thetaReplace]
 
-    
-    def removeFreqs(self, freqs=[], freqRange=[]):
+    def replaceAngle(self, thetaReplace, thetaReplaceWith):
+        """
+        Sets the audioSample at thetaReplace to copy of the audioSample currently 
+        at thetaReplaceWith 
+        """
+        assert (thetaReplace in self.angles), "given remove angle not in this polarData instance use polarData.getAngles() to see list of angles"
+        assert (thetaReplaceWith in self.angles), "given replace angle not in this polarData instance use polarData.getAngles() to see list of angles"
+
+        self.audioData[thetaReplace] = self.audioData[thetaReplaceWith].copy()
+        
+    def removeFreqsAtTheta(self, theta, freqs=[], freqRange=[]):
         """
         Uses changeFreqs to remove the given frequencies from the data set
         """
-        self.changeFreqs("rm", freqs=freqs, freqRange=freqRange)
-    
-    def changeFreqs(self, value, freqs=[], freqRange=[], mode=None):
+        self.changeFreqs("rm", theta, freqs=freqs, freqRange=freqRange)
+
+    def changeFreqsAtTheta(self, value, theta, freqs=[], freqRange=[], mode=None):
         """
         Uses the audioSample.changeFreqs(self, value, freqs=[], freqRange=[-1,-1], dbOnly=False)
         to adjust values of specifed frequencies within the data at all angles. Autimatically 
@@ -85,22 +226,62 @@ class polarData:
             > if "f" - input value is in complex amplitude - converts value to polar coordinates before
               changing
             > if "db-only" - input is meant to effect the magnitude of a frequency only (not the phase)
+            > if None, it assumes input value is given in db format
+
+
+        Returns:
+         > frequencies changed on this pass through the audioSamples
         """
 
-        # don't convert all data into f for frequency changes
-        # convert input value instead
+        # convert input value if given in complex amplitude
         if mode == "f": value = complex(abs(value), atan(value.imag/value.real))
 
-        for audioSamp in self.audioData.values():
-            _type = audioSamp._type # to convert back to 
+        theta = self.getClosestAngle(theta)
 
-            audioSamp.toDb() # ensure data in freq domain 
+        audioSamp =  self.audioData[theta]
+        
+        _type = audioSamp._type # to convert back to 
 
-            audioSamp.changeFreqs(value, freqs=freqs, freqRange=freqRange, dbOnly=(mode=="db-only"))
+        audioSamp.toDb() # ensure data in mag, phase domain 
 
-            audioSamp.type = _type # convert back to original type
+        changed = audioSamp.changeFreqs(value, freqs=freqs, freqRange=freqRange, dbOnly=(mode=="db-only"))
+
+        audioSamp.type = _type # convert back to original type
+
+        return changed
+
+    def changeFreqs(self, value, thetas=[], thetaRange=[-1,-1], freqs=[], freqRange=[], mode=None):
+
+        """
+        changes the frequencies of the audioSamples at the given angles, which can be input in exact angles or
+        can be input as a range
+
+
+        if the no thetas nor a range are given, the changes will be applied to the audioSamples at all thetas
+        """
+
+        changed = set()
+
+        # if no angles given, it will alter the frequencies for all thetas
+        if not thetas and thetaRange == [-1,-1]: thetaRange = [0,360]
+
+        lowerTheta, upperTheta = thetaRange[:2]
+
+        for theta in self.angles:
             
+            if theta in thetas or lowerTheta <= theta <= upperTheta:                
+                changed.update(self.changeFreqsAtTheta(value, theta, freqs=freqs, freqRange=freqRange, mode=mode))
 
+        if value == "rm" or abs(value) < 1e-16:
+            self._fs_rm.extend(changed)
+
+        return changed
+
+    def setAngle(self, theta, audioSample):
+        assert theta in self.angles, "given angle not in this audioSample use audioSample.getAngles() to see a lit of containined angles"
+        assert self.audioData[0].fs == audioSample.fs and len(self.audioData[0]) == len(audioSample), "all audiosamples in a polarData instance must have the same fs and length"
+        self.audioData[theta] = audioSample
+            
     def setType(self, _type):
         for audioSamp in self.audioData.values(): audioSamp.type = _type
 
@@ -109,15 +290,23 @@ class polarData:
 
     def getFreq(self, theta=0):
         return self.audioData[theta].f()
-        
 
-    def checkAngle(self, theta):
-        if theta not in self.audioData:
-            print str(theta) + " not in data set. using closest given angle"
-        
-        return self.getClosestAngle(theta)
+    def getRemoved(self):
+        return self._fs_rm
 
+    def getData(self, theta=None):
+        """
+        Get audioSample data for this object at specified angle. 
+        If no angle specified, all of the data will be returned. 
+        """
+        if theta is None: return self.audioData
 
+        theta = self.getClosestAngle(theta)
+        return self.audioData[theta]
+
+    def getType(self):
+        return self.audioData[0].type
+    
     def getClosestAngle(self, theta):
         """
         Returns the value of the closest angle to theta in the dataset in degrees
@@ -127,6 +316,10 @@ class polarData:
 
         difference = [abs(theta-a) for a in self.angles]
         return self.angles[difference.index(min(difference))]
+
+    def save(self, filename):
+        with open(filename, "wb") as f:
+            pickle.dump(self, f)
 
 
 
