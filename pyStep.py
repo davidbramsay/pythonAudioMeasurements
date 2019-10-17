@@ -1,3 +1,9 @@
+"""
+
+for interacting with an arduino board through Serial communicaiton and taking audio measurements
+
+@author: Tony Terrasa
+"""
 from pyfirmata import Arduino, util
 import time
 

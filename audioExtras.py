@@ -4,13 +4,20 @@ Created on Wed Nov 18 12:15:45 2015
 
 @author: davidramsay
 """
-
+from __future__ import print_function
 import math
 import numpy as np
 import sys
-import cStringIO
 import struct
-from itertools import izip_longest
+
+# temporary fixes for python3 compatibility
+if sys.version_info[0] < 3: 
+    import cStringIO 
+    from itertools import izip_longest
+elif sys.version_info[0] >= 3: 
+    from io import StringIO as cStringIO 
+    from itertools import zip_longest as izip_longest
+
 
 """
 helper functions for audio interactions.

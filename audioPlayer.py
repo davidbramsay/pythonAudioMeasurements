@@ -5,6 +5,7 @@ Created on Thu Nov 19 16:58:59 2015
 @author: davidramsay
 """
 
+from __future__ import print_function
 import pyaudio
 import numpy as np
 from itertools import izip_longest
@@ -59,6 +60,7 @@ of the default audio already in the object.
 
 """
 
+
 class audioPlayer(object):
 
     def __init__(self, audio=None, channels=1, chunk=1024, Fs=44100):
@@ -99,7 +101,7 @@ class audioPlayer(object):
         self._playaudio = self._rawaudio/max(abs(self._rawaudio))
         self._normalized = True
         self._volume = 0.0
-        print 'set to full volume (0 dBFS).'
+        print('set to full volume (0 dBFS).')
 
 
     def denormalize(self):
@@ -108,7 +110,7 @@ class audioPlayer(object):
         self._playaudio = self._rawaudio
         self._volume = self._rawvolume
         self._normalized = False
-        print 'set to original volume ' + str(self._volume) + ' dBFS.'
+        print('set to original volume ' + str(self._volume) + ' dBFS.')
 
 
     def setVolume(self, volume=0):
@@ -123,41 +125,41 @@ class audioPlayer(object):
                 if self._volume == 0.0: self._normalized = True
                 else: self._normalized = False
 
-        print 'set to volume ' + str(self._volume) + ' dBFS.'
+        print('set to volume ' + str(self._volume) + ' dBFS.')
 
 
     def _getInput(self, channel, audioToPlay, useVolume, normalizeTestSignal):
         #get the interleaved signal to playback given configuration options
         assert (audioToPlay is not None or self._rawaudio is not None), 'either audio must be passed or default audio must be initiated.'
-        if (useVolume and normalizeTestSignal): print 'WARNING: cannot use volume and normalize at the same time; assuming normalization is desired.'
+        if (useVolume and normalizeTestSignal): print('WARNING: cannot use volume and normalize at the same time; assuming normalization is desired.')
 
         if audioToPlay is not None:
 
             audioToPlay = audioToPlay - np.mean(audioToPlay)
 
             if normalizeTestSignal:
-                print 'playing passed audio at full scale.'
+                print('playing passed audio at full scale.')
                 out_audio = audioToPlay / np.amax(np.abs(audioToPlay))
             elif useVolume:
-                print 'playing passed audio to match default audio volume of ' + str(self._volume) + ' dBFS.'
+                print('playing passed audio to match default audio volume of ' + str(self._volume) + ' dBFS.')
                 linear_gain = 10**(self._volume/20.0)
                 out_audio = audioToPlay * linear_gain / float(np.amax(np.abs(audioToPlay)))
             else:
                 try:
-                    print 'playing passed audio as given, at ' + str(20.0 * math.log10(np.amax(np.abs(audioToPlay)))) + ' dBFS.'
+                    print('playing passed audio as given, at ' + str(20.0 * math.log10(np.amax(np.abs(audioToPlay)))) + ' dBFS.')
                 except:
-                    print 'playing passed audio as given.'
+                    print('playing passed audio as given.')
 
                 out_audio = audioToPlay
         else:
             if normalizeTestSignal and not self._normalized:
-                print 'playing default audio normalized to full scale, which is not how it\'s currently configured (this change is not saved for future measurements.)'
+                print('playing default audio normalized to full scale, which is not how it\'s currently configured (this change is not saved for future measurements.)')
                 out_audio = self._rawaudio/max(abs(self._rawaudio))
             elif not useVolume and self._volume != self._rawvolume:
-                print 'playing default audio at raw audio volume of ' + str(self._rawvolume) + ' dBFS, which is not how it\'s currently configured (this change is not saved for future measurements.)'
+                print('playing default audio at raw audio volume of ' + str(self._rawvolume) + ' dBFS, which is not how it\'s currently configured (this change is not saved for future measurements.)')
                 out_audio = self._rawaudio
             else:
-                print 'playing default saved audio at configured volume of ' + str(self._volume) + ' dBFS.'
+                print('playing default saved audio at configured volume of ' + str(self._volume) + ' dBFS.')
                 out_audio = self._playaudio
 
         if (channel==0):

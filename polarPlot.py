@@ -1,3 +1,4 @@
+from __future__ import print_function
 from audioMeasure import audioMeasure
 from audioSample import audioSample
 from pyfirmata import Arduino, util
@@ -178,12 +179,12 @@ class polarPlot(object):
         micManufacturer = raw_input("please enter manufacturer/maker:")
         micModel = raw_input("please enter microphone model:")
 
-        print 'axis of measurements:'
-        print '\tfor MEMs mics, the short dimension closest to the port is facing 0 degrees.  For Electrets, 0 degrees will be along the axis that splits the pins' + \
+        print('axis of measurements:')
+        print('\tfor MEMs mics, the short dimension closest to the port is facing 0 degrees.  For Electrets, 0 degrees will be along the axis that splits the pins' + \
               ', towards the "top" if neg/gnd pin on the right looking top down (through the mic).  Y runs along the 0-180 degree axis, X runs along the 90-270 ' + \
               'degree axis, (as if looking at a polar with 0 degrees on top, with axes labeled appropriately. Z runs through the axis of symmetry of the ' + \
               'microphone (positive towards the ceiling).\n\n\'x-y\' in plane of floor with mic/array facing upwards (primary direction you expect to be used).  Y=0 degrees.' + \
-              '\n\'x-z\' is with positive/0-Y direction towards the ceiling, in the X-Z plane, with positive-Z facing at 0 degrees.'
+              '\n\'x-z\' is with positive/0-Y direction towards the ceiling, in the X-Z plane, with positive-Z facing at 0 degrees.')
 
         measureAxis = raw_input("please enter axis of measurement ('x-y', 'x-z' (default: x-y):")
         if not measureAxis: measureAxis = "x-y"

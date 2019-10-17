@@ -4,11 +4,11 @@ Created on Wed Nov 18 12:09:25 2015
 
 @author: davidramsay
 """
-
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
-import audioExtras as ae
+import pythonAudioMeasurements.audioExtras as ae
 import copy
 
 """
@@ -110,7 +110,7 @@ class audioSample(object):
     def f(self):
         #return frequencies of samples
         if self._type=="t":
-            print "watch out, your raw data is in time units!"
+            print("watch out, your raw data is in time units!")
 
         try:
             return self.freqs
@@ -122,7 +122,7 @@ class audioSample(object):
     def t(self):
         #return times of samples
         if self._type in ("f", "db"):
-           print "watch out, your data is in freq units!"
+           print("watch out, your data is in freq units!")
 
         return np.linspace(0.0, (float(self._tLength)-1.0)/self._fs, self._tLength)
 
@@ -176,18 +176,18 @@ class audioSample(object):
 
         if new_type != current_type:
             if new_type == "t":
-                if verbose: print 'converted to time'
+                if verbose: print('converted to time')
                 self.toTime()
             elif new_type == "f":
-                if verbose: print 'converted to freq'
+                if verbose: print('converted to freq')
                 self.toFreq()
             elif new_type == "db":
-                if verbose: print 'converted to db'
+                if verbose: print('converted to db')
                 self.toDb()
             else:
                 raise TypeError("instance.type is invalid!")
         else:
-            if verbose: print 'already of that type'
+            if verbose: print('already of that type')
 
 
 
@@ -201,7 +201,7 @@ class audioSample(object):
             self.toTime()
 
         elif (self.type == "t"):
-            if verbose: print "already in time"
+            if verbose: print("already in time")
 
         else:
             raise TypeError("instance.type is invalid!")
@@ -218,7 +218,7 @@ class audioSample(object):
             self._type = "f"
 
         elif (self._type == "f"):
-            if verbose: print "already in freq"
+            if verbose: print("already in freq")
 
         else:
             raise TypeError("instance.type is invalid!")
@@ -236,7 +236,7 @@ class audioSample(object):
             self.toDb()
 
         elif (self._type == "db"):
-            if verbose: print "already in db"
+            if verbose: print("already in db")
 
         else:
             raise TypeError("instance.type is invalid!")
@@ -424,13 +424,13 @@ class audioSample(object):
         assert(len(self._data)), 'must have data to normalize'
         if (self._type == "t"):
             assert (np.mean(self._data) < 1e-15), 'must not have DC component to be normalized, remove with removeDCOffset'
-            print "normalizing time data to [-1, 1]"
+            print("normalizing time data to [-1, 1]")
             self._data = self._data / float(np.amax(np.abs(self._data)))
         elif (self._type == "db"):
-            print "normalizing db data to 0dBFs"
+            print("normalizing db data to 0dBFs")
             self._data.real = self._data.real - float(np.amax(self._data.real))
         else:
-            print "not a normalizable type, please submit time domain or db data"
+            print("not a normalizable type, please submit time domain or db data")
 
 
     def setVolume(self, volume=-6):
@@ -453,12 +453,11 @@ class audioSample(object):
             self.smoothFFT(octSmooth)
 
         else:
-            print "CREATED COPY of original samples"
+            print("CREATED COPY of original samples")
             temp = copy.deepcopy(self)
             temp.smoothFFT(octSmooth)
             temp.smoothFFT(octSmooth)
             return temp
-
 
     def smoothFFT(self, octSmooth, destructive = 'y'):
         #convert data to dB and smooth magnitude data, leaving phase

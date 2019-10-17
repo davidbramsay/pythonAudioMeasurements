@@ -6,7 +6,7 @@ Created on Wed Nov 18 14:13:21 2015
 @author: davidramsay
 
 """
-
+from __future__ import print_function
 from audioSample import audioSample
 from audioPlayer import audioPlayer
 from itertools import izip_longest
@@ -113,7 +113,7 @@ class audioMeasure(object):
         #defaults to size and fs that are current (0 and 44100 for empty instance)
         #duration in sec
         if duration is None:
-            print "size of previous output signal used, " + str(duration) + " sec"
+            print("size of previous output signal used, " + str(duration) + " sec")
             duration = self.output._tLength / float(self.fs)
 
         size = int(duration * self.fs)
@@ -197,15 +197,15 @@ class audioMeasure(object):
                 break
 
         plt.ioff()
-        print 'volume set to ' + str(self.aplayer._volume)
+        print('volume set to ' + str(self.aplayer._volume))
 
 
     def setRepeatsSNR(self, samples=8192, repeats=[5, 10, 15, 20, 25, 30, 35]):
         #find SNR
 
-        print ('*'*70 + '\n')*6
-        print ' '*15 + 'MEASURING THE NOISE FLOOR, BE QUIET!!!\n'
-        print ('*'*70 + '\n')*6
+        print(('*'*70 + '\n')*6)
+        print(' '*15 + 'MEASURING THE NOISE FLOOR, BE QUIET!!!\n')
+        print(('*'*70 + '\n')*6)
         repeat_longest = max(repeats)
         self.pinkNoiseLoop(samples, repeat_longest)
 
@@ -463,9 +463,9 @@ if __name__ == "__main__":
         smoothMSE = test.differenceFromSmoothed()
         eqMSE = test.differenceFromEQ()
         ae.enablePrint()
-        print "mse = " + str(smoothMSE) + "; eqmse = " + str(eqMSE)
+        print("mse = " + str(smoothMSE) + "; eqmse = " + str(eqMSE))
         scale = np.mean(smoothMSE) + np.mean(eqMSE)
-        print "score = " + str(int(50*(np.mean(smoothMSE) + np.mean(eqMSE))/scale))
+        print("score = " + str(int(50*(np.mean(smoothMSE) + np.mean(eqMSE))/scale)))
         try:
             while True:
                 ae.disablePrint()
@@ -475,8 +475,8 @@ if __name__ == "__main__":
                 smoothMSE = test.differenceFromSmoothed()
                 eqMSE = test.differenceFromEQ()
                 ae.enablePrint()
-                print "mse = " + str(smoothMSE) + "; eqmse = " + str(eqMSE)
-                print "score = " + str(int(50*(np.mean(smoothMSE) + np.mean(eqMSE))/scale))
+                print("mse = " + str(smoothMSE) + "; eqmse = " + str(eqMSE))
+                print("score = " + str(int(50*(np.mean(smoothMSE) + np.mean(eqMSE))/scale)))
 
         except KeyboardInterrupt:
             exit
@@ -542,5 +542,5 @@ if __name__ == "__main__":
         test.calcTF()
         test.plotFreqResp()
         test.plotImpulseResp()
-        print "mse = " + str(test.differenceFromSmoothed(doplot=True))
-        print "eqmse = " + str(test.differenceFromEQ(doplot=True))
+        print("mse = " + str(test.differenceFromSmoothed(doplot=True)))
+        print("eqmse = " + str(test.differenceFromEQ(doplot=True)))
