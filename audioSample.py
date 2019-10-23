@@ -70,7 +70,7 @@ Potential to add/change:
 
 -change functions like hanning and zeropad to only work when it's time domain, instead of applying in time domain
 and switching back to current representation?  more clunky for user but more sensical paradigm...
-
+- add a better __str__
 
 """
 
@@ -393,6 +393,7 @@ class audioSample(object):
         changed = []
 
         
+        # removing a frequency just sets its amplitude to 0
         set_value = 1e-12 if value == "rm" else complex(value)
 
         if value == "rm": self.toFreq()

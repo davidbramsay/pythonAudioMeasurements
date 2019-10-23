@@ -1,13 +1,25 @@
-import cPickle as pickle
-from pyStep import Stepper
-from audioSample import audioSample
+"""
+Wrapper for atoring polar data taken of a microphone along with metadata about the experiment
+
+@author: Tony Terrasa
+"""
+from __future__ import print_function
+from pythonAudioMeasurements.pyStep import Stepper
+from pythonAudioMeasurements.audioSample import audioSample
 from math import atan
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
 
+# python 3 compatibility
 import sys
-sys.path.append('../')
+if sys.version_info[0] < 3: 
+    import cPickle as pickle
+elif sys.version_info[0] >= 3: 
+    import pickle
+
+#import sys
+#sys.path.append('../')
 
 """
 
@@ -54,7 +66,7 @@ class polarData:
         self._fs_rm  = []
 
         with open(filename, "rb") as file_:
-            loadedFile = pickle.load(file_)
+            loadedFile = pickle.load(file_, encoding="latin1")
 
         self.angles = loadedFile[0]["angles"] 
 
@@ -86,9 +98,9 @@ class polarData:
         if theta not in self.audioData:
             oldTheta = theta
             theta = self.getClosestAngle(theta)
-            print "%d not in data set. using closest given angle: %d" % (oldTheta, theta)            
+            print("%d not in data set. using closest given angle: %d" % (oldTheta, theta))
 
-        print "displaying plot for: %d"%theta
+        print("displaying plot for: %d"%theta)
 
         self.audioData[theta].plot(both=both)
     
@@ -303,6 +315,10 @@ class polarData:
 
         theta = self.getClosestAngle(theta)
         return self.audioData[theta]
+
+
+    def __getitem__(self, theta):
+        return self.getData(theta)
 
     def getType(self):
         return self.audioData[0].type
