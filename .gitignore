@@ -4,3 +4,5 @@ data/*
 .gitignore
 tests_.py
 .gitignore
+*.*.py.swp
+.*.*.swp

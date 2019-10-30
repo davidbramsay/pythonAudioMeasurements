@@ -129,6 +129,10 @@ class audioSample(object):
 
     def __len__(self): return len(self._data)
 
+
+    def __getitem__(self, index):
+        return self.data[index]
+
     def __iter__(self):
         for val in self._data:
             yield val

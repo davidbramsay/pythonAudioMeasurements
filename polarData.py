@@ -28,6 +28,8 @@ To do:
 > generate a polar plot for the given data
     > inputs - frequencies to be shown - this shoul dhave some set of default values
 
+> considering changing the behavior of get_item to output the data raray from audioSample
+
 
 
 
@@ -45,7 +47,16 @@ Done:
 
 class polarData:
 
-    def __init__(self, filename):
+    def __init__(self, angles=[], audioData=[], fs=44100):
+
+        self._fs_rm  = []
+        self.fs = fs
+        self.angles = angles
+        self.audioData = audioData
+
+
+    @staticmethod
+    def fromPkl(filename):
 
 
         """
@@ -62,18 +73,21 @@ class polarData:
                       polarData level    
         """
 
-        self.filename = filename
-        self._fs_rm  = []
+        pd = polarData()
+
+        pd.filename = filename
 
         with open(filename, "rb") as file_:
             loadedFile = pickle.load(file_, encoding="latin1")
 
-        self.angles = loadedFile[0]["angles"] 
+        pd.angles = loadedFile[0]["angles"] 
 
         # dictionary mapping int value of each angle to its appropriate audioSample
-        self.audioData = dict(zip (self.angles, loadedFile[0]["measurements"]))
+        pd.audioData = dict(zip (pd.angles, loadedFile[0]["measurements"]))
 
-        self.assertValidData()
+        pd.assertValidData()
+
+        return pd
 
     def assertValidData(self):
         """
