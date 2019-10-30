@@ -71,6 +71,7 @@ Potential to add/change:
 -change functions like hanning and zeropad to only work when it's time domain, instead of applying in time domain
 and switching back to current representation?  more clunky for user but more sensical paradigm...
 - add a better __str__
+- way to suppress warning for when inputting frequency domain data
 
 """
 

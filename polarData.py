@@ -154,7 +154,7 @@ class polarData:
         legend = [str(int(available_freqs[i])) for i in f_indeces]
 
         # make sure all data in Db
-        oldType = self.audioData[0].type 
+        oldType = self.audioData[self.angles[0]].type 
         self.setType("Db")
 
 
