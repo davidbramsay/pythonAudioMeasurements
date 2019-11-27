@@ -131,6 +131,30 @@ class audioSample(object):
     def __len__(self): return len(self._data)
 
 
+    def __mul__(self, num):
+        """
+        makes it possible to multiply the object by a scalar
+        or perform numpy array multiplication
+
+        also possible to multiple audioSample by an audioSample
+        which gives the same thing as numpy multiplication, but checks
+        to make sure that the arrays are of the sametype
+        """
+
+        if isinstance(num, audioSample):
+            num.type = self.type # changes to of num audioSample to same as self
+            return self*num.data
+
+        assert isinstance(num, (np.ndarray, float, int, complex)), "can only multiple audiosamples my scalars"
+
+        return audioSample(self._data * num, self.type, self.fs)
+
+
+    # do the same thing on both sides
+    __rmul__ = __mul__
+
+
+
     def __getitem__(self, index):
         return self.data[index]
 
@@ -531,4 +555,15 @@ class audioSample(object):
             if current_type == "t": self.toTime()
             elif current_type == "f": self.toFreq()
             elif current_type == "db": self.toDb()
+
+if __name__ == "__main__":
+    
+    a = np.arange(20)
+    a = audioSample(a)
+    b = np.arange(20)
+    b = audioSample(b)
+    # b = 4
+
+    print(type(a*b))
+
 
