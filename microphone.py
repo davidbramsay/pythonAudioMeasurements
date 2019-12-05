@@ -68,6 +68,8 @@ class Microphone:
         signal.toFreq()
         freqs = signal.f()
 
+        print(self.normal_origin_dist(theta))
+
         # time-domain shift
         delta_t =  self.normal_origin_dist(theta)/self.c
 
@@ -76,7 +78,7 @@ class Microphone:
         return signal*phase_shift
 
 
-    def apply_microphone(self, signal, theta):
+    def apply_microphone(self, signal, theta, f_targ=None):
         """
         the input signal must have been taken at the same sample rate
         for this to work. 
@@ -86,12 +88,12 @@ class Microphone:
         mic_response = self.polar.getData(theta)
         mic_response.removeDCOffset()
 
-
-        for i, f in enumerate(mic_response.f()):
-            if f >= f_targ: 
-                mic_response.toFreq()
-                print(f, abs(mic_response[i]))
-                break
+        if f_targ:
+            for i, f in enumerate(mic_response.f()):
+                if f >= f_targ: 
+                    mic_response.toFreq()
+                    print(f, abs(mic_response[i]))
+                    break
 
         # must have signal of same fs as mic response
         assert mic_response.fs == signal.fs, "your input signal must have the same " + \
@@ -113,37 +115,7 @@ class Microphone:
     
         return audioSample(result, Fs=signal.fs) 
 
-f_targ = 150
 
 
 if __name__ == "__main__":
-    filename = "/home/terrasa/UROP/polar-measurement/data/19_Jan15/spv1840.pkl" 
-    pd = polarData.fromPkl(filename)
-
-
-    pd.plotAngle(90)
-
-    # position in mm
-    mic = Microphone(pd, [-1,1])
-
-    fs = 44.1e3
-    n = np.arange(f_targ*3)
-
-    sin_wave = np.sin(n*(2*np.pi)*f_targ/fs)
-    sin_wave = audioSample(sin_wave, type="t", Fs=fs)
-
-    # plot time-domain wave-form
-    sin_wave.toTime()
-    plt.plot(sin_wave.t(), sin_wave)
-
-
-    sin_shifted = mic.apply(sin_wave, 90)
-
-    # plot the resulting waveform
-    sin_shifted.toTime()
-    plt.plot(sin_shifted.t(), sin_shifted)
-
-    plt.legend(["original", "shifted"])
-    plt.show()
-
-
+    pass

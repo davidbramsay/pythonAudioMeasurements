@@ -78,7 +78,7 @@ and switching back to current representation?  more clunky for user but more sen
 class audioSample(object):
 
 
-    def __init__(self, dataArray = [], type = "t", Fs = 44100):
+    def __init__(self, dataArray = [], type = "t", Fs = 44100, supress=False):
         self._data = dataArray
         self._fs = Fs
         self._fs_rm = set()
@@ -89,11 +89,12 @@ class audioSample(object):
             self._tLength = len(self._data)
         else:
             self._tLength = 2* len(self._data) - 1
-            print ("make sure data is single sided, as " +
-            "described in np.fft.rfft doc.  Reverse " +
-            "transform to time is non-deterministic, " +
-            "it will be assumed that the time domain " +
-            "length of the signal is 2*len(data)-1 ")
+            if not supress:
+                print ("make sure data is single sided, as " +
+                "described in np.fft.rfft doc.  Reverse " +
+                "transform to time is non-deterministic, " +
+                "it will be assumed that the time domain " +
+                "length of the signal is 2*len(data)-1 ")
 
 
     def copy(self):
@@ -148,7 +149,8 @@ class audioSample(object):
 
         assert isinstance(num, (np.ndarray, float, int, complex)), "can only multiply audiosamples my scalars, or equally sized audioSamples or arrays"
 
-        return audioSample(self._data * num, self.type, self.fs)
+        # this will preserve the length with the single-sided-ness
+        return audioSample(self._data * num, type=self.type, Fs=self.fs, supress=True)
 
 
     # do the same thing on both sides
