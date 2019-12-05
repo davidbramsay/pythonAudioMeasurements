@@ -141,11 +141,12 @@ class audioSample(object):
         to make sure that the arrays are of the sametype
         """
 
+
         if isinstance(num, audioSample):
             num.type = self.type # changes to of num audioSample to same as self
             return self*num.data
 
-        assert isinstance(num, (np.ndarray, float, int, complex)), "can only multiple audiosamples my scalars"
+        assert isinstance(num, (np.ndarray, float, int, complex)), "can only multiply audiosamples my scalars, or equally sized audioSamples or arrays"
 
         return audioSample(self._data * num, self.type, self.fs)
 

@@ -2,6 +2,7 @@
 *.pyc
 data/*
 .gitignore
+tests.py
 tests_.py
 .gitignore
 *.*.py.swp
