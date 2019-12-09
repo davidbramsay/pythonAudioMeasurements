@@ -75,7 +75,7 @@ class Microphone:
 
         phase_shift = np.exp(-1j*np.pi*freqs*delta_t)
 
-        return signal*phase_shift
+        return audioSample(signal*phase_shift, type=signal.type,Fs=signal.fs)
 
 
     def apply_microphone(self, signal, theta, f_targ=None):
@@ -86,7 +86,7 @@ class Microphone:
 
         # get the frequency response of the microphone at the given theta
         mic_response = self.polar.getData(theta)
-        mic_response.removeDCOffset()
+        mic_response.removeDCOffset().
 
         if f_targ:
             for i, f in enumerate(mic_response.f()):

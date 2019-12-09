@@ -2,6 +2,7 @@ import numpy as np
 from polarData import polarData
 from pythonAudioMeasurements.audioSample import audioSample
 from pythonAudioMeasurements.microphone import Microphone
+from pythonAudioMeasurements.microphoneArray import MicrophoneArray
 import matplotlib.pyplot as plt
 from scipy.signal import convolve
 
@@ -119,8 +120,10 @@ def simulate_polar_2mic():
     mic_1 = Microphone(pd, [0,0])
     mic_2 = Microphone(pd, [390, 0])
 
+    mic_array = MicrophoneArray([mic_1, mic_2])
+
     fs = 44.1e3
-    n = np.arange(10000)
+    n = np.arange(10001)
 
     for f_test in f_options:
 
@@ -133,19 +136,17 @@ def simulate_polar_2mic():
 
         for theta in thetas:
 
-            result_1 = mic_1.apply_xy(sin_wave, theta)
-            result_2 = mic_2.apply_xy(sin_wave, theta)
+            result = mic_array.apply(sin_wave, theta)
+            result.toTime()
 
-            result_1.toTime()
-            result_2.toTime()
-
-            result = audioSample(result_1.data + result_2.data, type="t",Fs=result_1.fs)
+            result.plot(True)
             mags.append(max(result))
 
         plt.polar(thetas*np.pi/180, mags)
 
     plt.legend(f_options)
     plt.show()
+
 
 
 
