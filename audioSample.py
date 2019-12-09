@@ -79,6 +79,14 @@ class audioSample(object):
 
 
     def __init__(self, dataArray = [], type = "t", Fs = 44100, supress=False):
+
+        if isinstance(dataArray, audioSample): 
+            self._data = dataArray.data
+            self._type = dataArray.type
+            self._fs = dataArray.fs
+            self._tLength = dataArray._tLength
+            return
+
         self._data = dataArray
         self._fs = Fs
         self._fs_rm = set()

@@ -139,7 +139,7 @@ def simulate_polar_2mic():
             result = mic_array.apply(sin_wave, theta)
             result.toTime()
 
-            result.plot(True)
+            # result.plot(True)
             mags.append(max(result))
 
         plt.polar(thetas*np.pi/180, mags)

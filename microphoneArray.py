@@ -25,9 +25,9 @@ class MicrophoneArray:
         for mic in self.microphones:
             this_result = mic.apply(signal, theta)
             this_result.toTime()
-            print(len(this_result))
+            # print(len(this_result))
             result += this_result.data[:len(signal)] # accounts for 1-off from even-lengthsed signals
 
-        return result
+        return audioSample(result, type=signal.type, Fs=signal.fs)
 
 

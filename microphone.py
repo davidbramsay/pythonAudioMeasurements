@@ -86,7 +86,7 @@ class Microphone:
 
         # get the frequency response of the microphone at the given theta
         mic_response = self.polar.getData(theta)
-        mic_response.removeDCOffset().
+        mic_response.removeDCOffset()
 
         if f_targ:
             for i, f in enumerate(mic_response.f()):
