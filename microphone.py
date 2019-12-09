@@ -68,7 +68,7 @@ class Microphone:
         signal.toFreq()
         freqs = signal.f()
 
-        print(self.normal_origin_dist(theta))
+        # print(self.normal_origin_dist(theta))
 
         # time-domain shift
         delta_t =  self.normal_origin_dist(theta)/self.c
@@ -92,7 +92,7 @@ class Microphone:
             for i, f in enumerate(mic_response.f()):
                 if f >= f_targ: 
                     mic_response.toFreq()
-                    print(f, abs(mic_response[i]))
+                    # print(f, abs(mic_response[i]))
                     break
 
         # must have signal of same fs as mic response
@@ -105,10 +105,10 @@ class Microphone:
 
         result = convolve(signal, mic_response, "same")
 
-        print(max(signal))
+        # print(max(signal))
         # print(np.average(signal))
         # print(sum(signal))
-        print(max(result))
+        # print(max(result))
         # print(np.average(result))
         # print(sum(result))
 
