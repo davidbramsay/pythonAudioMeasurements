@@ -106,21 +106,23 @@ def simulate_polar_1mic():
     plt.show()
 
 
-def simulate_polar_2mic():
+def simulate_polar_array():
 
     filename = "/home/terrasa/UROP/polar-measurement/data/19_Jan15/spv1840.pkl" 
     pd = polarData.fromPkl(filename)
 
 
-    f_options = [440]
+    f_options = [440,1000]
 
     # pd.plotAngle(90)
 
     # position in mm
     mic_1 = Microphone(pd, [0,0])
     mic_2 = Microphone(pd, [390, 0])
+    mic_3 = Microphone(pd, [100, 230])
 
-    mic_array = MicrophoneArray([mic_1, mic_2])
+    mic_array = MicrophoneArray([mic_1, mic_2, mic_3])
+    mic_array.visualize()
 
     fs = 44.1e3
     n = np.arange(10001)
@@ -131,7 +133,7 @@ def simulate_polar_2mic():
         sin_wave = audioSample(sin_wave, type="t", Fs=fs)
 
 
-        thetas = np.array(list(range(0, 361, 1)))
+        thetas = np.array(list(range(0, 361, 5)))
         mags = []
 
         for theta in thetas:
@@ -139,8 +141,8 @@ def simulate_polar_2mic():
             result = mic_array.apply(sin_wave, theta)
             result.toTime()
 
-            # result.plot(True)
-            mags.append(max(result))
+            # result.plot()
+            mags.append(max(result[len(result)//3:len(result)*2//3]))
 
         plt.polar(thetas*np.pi/180, mags)
 
@@ -153,4 +155,4 @@ def simulate_polar_2mic():
 if __name__ == "__main__":
     # test_mic_apply()
     # test_xy()
-    simulate_polar_2mic()
+    simulate_polar_array()

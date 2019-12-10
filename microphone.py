@@ -73,9 +73,23 @@ class Microphone:
         # time-domain shift
         delta_t =  self.normal_origin_dist(theta)/self.c
 
-        phase_shift = np.exp(-1j*np.pi*freqs*delta_t)
+        phase_shift = np.exp(-1j*2*np.pi*freqs*delta_t)
 
-        return audioSample(signal*phase_shift, type=signal.type,Fs=signal.fs)
+        # for f, phi in zip(freqs, phase_shift):
+        #     if f > 439:
+        #         print(f, phi)
+        #         break
+
+        # plt.plot(freqs, np.pi*freqs*delta_t)
+        # plt.yticks(np.arange(0, max(np.pi*freqs*delta_t), 2*np.pi))
+        # plt.plot([440,440], [-1,1])
+        # plt.title("%f for %f, %f"%(theta, self.position[0], self.position[0]))
+        # plt.show()
+
+        result = audioSample(signal*phase_shift, type="f",Fs=signal.fs) 
+        signal.toTime()
+
+        return result
 
 
     def apply_microphone(self, signal, theta, f_targ=None):
@@ -88,12 +102,12 @@ class Microphone:
         mic_response = self.polar.getData(theta)
         mic_response.removeDCOffset()
 
-        if f_targ:
-            for i, f in enumerate(mic_response.f()):
-                if f >= f_targ: 
-                    mic_response.toFreq()
+        # if f_targ:
+        #     for i, f in enumerate(mic_response.f()):
+        #         if f >= f_targ: 
+        #             mic_response.toFreq()
                     # print(f, abs(mic_response[i]))
-                    break
+                    # break
 
         # must have signal of same fs as mic response
         assert mic_response.fs == signal.fs, "your input signal must have the same " + \
