@@ -1,5 +1,5 @@
 import numpy as np
-from polarData import polarData
+from pythonAudioMeasurements.polarData import polarData
 from pythonAudioMeasurements.audioSample import audioSample
 from pythonAudioMeasurements.microphone import Microphone
 from pythonAudioMeasurements.microphoneArray import MicrophoneArray
@@ -42,7 +42,7 @@ def test_xy():
     filename = "/home/terrasa/UROP/polar-measurement/data/19_Jan15/spv1840.pkl" 
     pd = polarData.fromPkl(filename)
 
-    f_targ = 150
+    f_targ = 1000
 
     pd.plotAngle(90)
 
@@ -57,16 +57,18 @@ def test_xy():
 
     # plot time-domain wave-form
     sin_wave.toTime()
-    plt.plot(sin_wave.t(), sin_wave)
+    #plt.plot(sin_wave.t(), sin_wave)
 
-    sin_shifted = mic.apply(sin_wave, 90)
+    for theta in range(0,361,15):
+        sin_shifted = mic.apply_xy(sin_wave, theta)
 
-    # plot the resulting waveform
-    sin_shifted.toTime()
-    plt.plot(sin_shifted.t(), sin_shifted)
+        # plot the resulting waveform
+        sin_shifted.toTime()
+        plt.plot(sin_shifted.t(), sin_shifted)
 
-    plt.legend(["original", "shifted"])
-    plt.show()
+        plt.title(str(theta))
+        plt.legend(["original", "shifted"])
+        plt.show()
 
 
 def simulate_polar_1mic():
@@ -112,7 +114,7 @@ def simulate_polar_array():
     pd = polarData.fromPkl(filename)
 
 
-    f_options = [440,1000]
+    f_options = [440]#,1000]
 
     # pd.plotAngle(90)
 
@@ -121,7 +123,7 @@ def simulate_polar_array():
     mic_2 = Microphone(pd, [390, 0])
     mic_3 = Microphone(pd, [100, 230])
 
-    mic_array = MicrophoneArray([mic_1, mic_2, mic_3])
+    mic_array = MicrophoneArray([mic_1, mic_2])#, mic_3])
     mic_array.visualize()
 
     fs = 44.1e3
@@ -142,7 +144,7 @@ def simulate_polar_array():
             result.toTime()
 
             # result.plot()
-            mags.append(max(result[len(result)//3:len(result)*2//3]))
+            mags.append(max(result))
 
         plt.polar(thetas*np.pi/180, mags)
 
@@ -154,5 +156,5 @@ def simulate_polar_array():
 
 if __name__ == "__main__":
     # test_mic_apply()
-    # test_xy()
-    simulate_polar_array()
+    test_xy()
+    # simulate_polar_array()

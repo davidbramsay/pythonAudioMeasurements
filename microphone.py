@@ -12,8 +12,21 @@ class Microphone:
     def __init__(self, polar, position=[0,0], c=343e3):
         """
         position should be a vector x,y of the relative positoin
-        from the specified origen
+        from the specified origin
         position, c must have the same distance units, defaults assume mm
+
+
+        ---------------------------------------------------------------------
+        polar           | polarData object containing the characteristic data 
+                        | for the mic
+        ---------------------------------------------------------------------
+        position        | list [x,y] relative to the origin see units below
+        ---------------------------------------------------------------------
+        c               | speed of sound in the given medium - should be same 
+                        | units as ~position~ (assumed to be mm/s)
+        ---------------------------------------------------------------------
+        
+        
         """
         
         self.polar = polar
@@ -22,15 +35,18 @@ class Microphone:
 
     def normal_origin_dist(self, theta):
         """
-        theta is in degrees
-
         if a plane wave is traveling in at an angle theta, 
-        calculates the distance from the origien that the microphone is 
+        calculates the distance from the origin that the microphone is 
         normal to sound wave
 
         this is the "addition distance" covered by a plane wave between
         when the mirophone experiences the sound and when it would be 
-        experienced at the origen
+        experienced at the origin
+
+        ---------------------------------------------------------------------
+        theta			| angle of approach (degrees)
+        ---------------------------------------------------------------------
+        
         """
 
         # conversion to radians
@@ -44,47 +60,65 @@ class Microphone:
 
     def apply(self, signal, theta):
 
+        """
+        Return the audioSample that results from the ~signal~ approaching as  
+        a plane wave at angle ~theta~ from the origin
+
+        This transformation of the signal consists of the effects from both 
+
+        ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
+        signal			| (audioSample) the input signal 
+        ---------------------------------------------------------------------
+        theta			| (float, int) angle of approach (degrees)
+        ---------------------------------------------------------------------
+
+        ---------------------------------------------------------------------
+        OUTPUTS
+        ---------------------------------------------------------------------
+        (audioSample) resulting from the described transformation
+        ---------------------------------------------------------------------
+       """ 
+
         mic = self.apply_microphone(signal, theta)
         return self.apply_xy(mic, theta)
 
 
     def apply_xy(self, signal, theta):
+
         """
-        theta is given in degrees 
+        Applies the phase shift to a signal resluting from its (x,y)
+        position, effectively collapses the microphone to the origin
 
-        applies the resulting phase shift to a signal based on the 
-        x and y position of the micriophone this effectively 
-        collapses the microphone to the origen
-
-        signal should be an audioSample object
-
-        leverages that in the freq domain e^(j*t_0*w)*X(w) shifts the
+        Leverages that in the freq domain e^(j*t_0*w)*X(w) shifts the 
         corresponding time domain signal by t_0
 
+        ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
+        same as Microphone.apply(self, signal, theta)
+        ---------------------------------------------------------------------
 
-        returns an object of type audioSample
+        ---------------------------------------------------------------------
+        OUTPUTS
+        ---------------------------------------------------------------------
+        (audioSample) resulting from the described transformation
+        ---------------------------------------------------------------------
         """
 
+        # get the component frequencies
         signal.toFreq()
         freqs = signal.f()
-
-        # print(self.normal_origin_dist(theta))
 
         # time-domain shift
         delta_t =  self.normal_origin_dist(theta)/self.c
 
+        # the resulting phase shift
         phase_shift = np.exp(-1j*2*np.pi*freqs*delta_t)
 
-        # for f, phi in zip(freqs, phase_shift):
-        #     if f > 439:
-        #         print(f, phi)
-        #         break
-
-        # plt.plot(freqs, np.pi*freqs*delta_t)
-        # plt.yticks(np.arange(0, max(np.pi*freqs*delta_t), 2*np.pi))
-        # plt.plot([440,440], [-1,1])
-        # plt.title("%f for %f, %f"%(theta, self.position[0], self.position[0]))
-        # plt.show()
+        print(len(phase_shift))
+        print(len(signal))
 
         result = audioSample(signal*phase_shift, type="f",Fs=signal.fs) 
         signal.toTime()
