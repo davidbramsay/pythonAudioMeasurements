@@ -2,7 +2,8 @@ import numpy as np
 from polarData import polarData
 from pythonAudioMeasurements.audioSample import audioSample
 import matplotlib.pyplot as plt
-from scipy.signal import convolve
+from scipy.signal import fftconvolve as convolve
+import cmath
 
 
 
@@ -109,22 +110,52 @@ class Microphone:
 
         # get the component frequencies
         signal.toFreq()
+
+        signal.plot(both=True)
+
         freqs = signal.f()
+
+        print(freqs)
 
         # time-domain shift
         delta_t =  self.normal_origin_dist(theta)/self.c
 
+
         # the resulting phase shift
         phase_shift = np.exp(-1j*2*np.pi*freqs*delta_t)
 
-        print(len(phase_shift))
-        print(len(signal))
-
         result = audioSample(signal*phase_shift, type="f",Fs=signal.fs) 
+
+
         signal.toTime()
 
         return result
 
+    def apply_xy_conv(self, signal, theta):
+
+        """
+        same as apply_xy but implemented in the time domain
+        """
+
+        # get the component frequencies
+        signal.toTime()
+
+        signal.plot(both=True)
+
+
+        # time-domain shift
+        delta_t =  self.normal_origin_dist(theta)/self.c
+        delta_n = int(delta_t*signal.fs)
+        shift_t = np.zeros(len(signal))
+        shift_t[delta_n] = 1
+
+
+        result = audioSample(convolve(signal, shift_t, "same"), type="t",Fs=signal.fs)
+
+
+        signal.toTime()
+
+        return result
 
     def apply_microphone(self, signal, theta, f_targ=None):
         """

@@ -50,25 +50,26 @@ def test_xy():
     mic = Microphone(pd, [-500,2000])
 
     fs = 44.1e3
-    n = np.arange(10000)
+    n = np.arange(100000)
 
     sin_wave = np.sin(n*(2*np.pi)*(f_targ/fs))
     sin_wave = audioSample(sin_wave, type="t", Fs=fs)
 
     # plot time-domain wave-form
     sin_wave.toTime()
-    #plt.plot(sin_wave.t(), sin_wave)
-
-    for theta in range(0,361,15):
+    
+    for theta in range(0,10,15):
         sin_shifted = mic.apply_xy(sin_wave, theta)
 
-        # plot the resulting waveform
-        sin_shifted.toTime()
-        plt.plot(sin_shifted.t(), sin_shifted)
+        sin_shifted.plot(both=True)
 
-        plt.title(str(theta))
-        plt.legend(["original", "shifted"])
-        plt.show()
+        # plot the resulting waveform
+        # sin_shifted.toTime()
+        # plt.plot(sin_shifted.t(), sin_shifted)
+
+        # plt.title(str(theta))
+        # plt.legend(["original", "shifted"])
+        # plt.show()
 
 
 def simulate_polar_1mic():

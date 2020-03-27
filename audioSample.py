@@ -145,7 +145,7 @@ class audioSample(object):
         makes it possible to multiply the object by a scalar
         or perform numpy array multiplication
 
-        also possible to multiply audioSample by an audioSample
+        also possible to multiple audioSample by an audioSample
         which gives the same thing as numpy multiplication, but checks
         to make sure that the arrays are of the sametype
         """
@@ -576,5 +576,4 @@ if __name__ == "__main__":
     # b = 4
 
     print(type(a*b))
-
 
