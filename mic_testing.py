@@ -11,38 +11,42 @@ def test_mic_apply():
     filename = "/home/terrasa/UROP/polar-measurement/data/19_Jan15/spv1840.pkl" 
     pd = polarData.fromPkl(filename)
 
-    f_targ = 150
-
     pd.plotAngle(90)
 
     # position in mm
-    mic = Microphone(pd, [-1,1])
+    mic = Microphone(pd, [-500,2000])
 
     fs = 44.1e3
-    n = np.arange(4000)
+    length = 100000
+    n = np.arange(length)
 
-    sin_wave = np.sin(n*(2*np.pi)*(f_targ/fs))
-    sin_wave = audioSample(sin_wave, type="t", Fs=fs)
+    f_targ = (fs/length) * 4900 # (2pi/ T)*k
+    # f_targ_2 = 2300
 
-    # plot time-domain wave-form
-    sin_wave.toTime()
-    plt.plot(sin_wave.t(), sin_wave)
+    sin_wave_1 = np.sin(n*(2*np.pi)*(f_targ/fs))
+    # sin_wave_2 = np.sin(n*(2*np.pi)*(f_targ_2/fs))
+    sin_wave = audioSample(sin_wave_1, type="t", Fs=fs)
+    # sin_wave.hanning()
 
+    pad = 10000
+    # sin_wave.hanning()
+    # sin_wave.zeroPadStart(pad)
+    # sin_wave.zeroPadEnd(pad)
+
+    sin_wave.plot(both=True)
 
     sin_shifted = mic.apply_microphone(sin_wave, 90)
 
     # plot the resulting waveform
     sin_shifted.toTime()
-    plt.plot(sin_shifted.t(), sin_shifted)
 
-    plt.legend(["original", "shifted"])
-    plt.show()
+    sin_shifted.plot(both=True)
+
 
 def test_xy():
     filename = "/home/terrasa/UROP/polar-measurement/data/19_Jan15/spv1840.pkl" 
     pd = polarData.fromPkl(filename)
 
-    f_targ = 1000
 
     pd.plotAngle(90)
 
@@ -50,26 +54,27 @@ def test_xy():
     mic = Microphone(pd, [-500,2000])
 
     fs = 44.1e3
-    n = np.arange(100000)
+    length = 100000
+    n = np.arange(length)
 
-    sin_wave = np.sin(n*(2*np.pi)*(f_targ/fs))
-    sin_wave = audioSample(sin_wave, type="t", Fs=fs)
+    f_targ = (fs/length) * 4000 # (2pi/ T)*k
+    # f_targ_2 = 2300
 
-    # plot time-domain wave-form
-    sin_wave.toTime()
+    sin_wave_1 = np.sin(n*(2*np.pi)*(f_targ/fs))
+    # sin_wave_2 = np.sin(n*(2*np.pi)*(f_targ_2/fs))
+    sin_wave = audioSample(sin_wave_1, type="t", Fs=fs)
+
+    pad = 10000
+    # sin_wave.hanning()
+    sin_wave.zeroPadStart(pad)
+    sin_wave.zeroPadEnd(pad)
+
+    sin_wave.plot(both=True)
     
-    for theta in range(0,10,15):
+    for theta in range(0,20,15):
         sin_shifted = mic.apply_xy(sin_wave, theta)
 
         sin_shifted.plot(both=True)
-
-        # plot the resulting waveform
-        # sin_shifted.toTime()
-        # plt.plot(sin_shifted.t(), sin_shifted)
-
-        # plt.title(str(theta))
-        # plt.legend(["original", "shifted"])
-        # plt.show()
 
 
 def simulate_polar_1mic():
@@ -78,35 +83,51 @@ def simulate_polar_1mic():
     pd = polarData.fromPkl(filename)
 
 
-    f_options = np.logspace(0,4, 6)
+    pd.plotAngle(0, both=True)
 
-    pd.plotAngle(90)
+
+
 
     # position in mm
     mic = Microphone(pd, [-500,2000])
 
     fs = 44.1e3
+    length = 100000
     n = np.arange(10000)
+    f_options = np.int32(np.logspace(2,4, 6))*2*(fs/length)
+
+    plt.figure(1)
 
     for f_test in f_options:
 
         sin_wave = np.sin(n*(2*np.pi)*(f_test/fs))
         sin_wave = audioSample(sin_wave, type="t", Fs=fs)
+        # sin_wave.hanning()
 
 
-        thetas = np.array(list(range(0, 361, 10)))
+        thetas = np.array(list(range(0, 361, 1)))
         mags = []
 
         for theta in thetas:
 
+            print(f_test, theta)
+
             result = mic.apply(sin_wave, theta)
-            result.toTime()
-            mags.append(max(result))
+
+            # sin_wave.plot(both=True) 
+            # result.plot(both=True) 
+
+            # get magnitude of the closest frequency of the result
+            result.toDb()
+            mags.append(result.getFreq([f_test])[0].real)
 
         plt.polar(thetas*np.pi/180, mags)
 
-    plt.legend(f_options)
-    plt.show()
+
+    plt.title("RESULT")
+    plt.legend(np.int32(f_options), loc = "upper left")
+    pd.plotFreqs(f_options, fig=2)
+
 
 
 def simulate_polar_array():
@@ -115,47 +136,63 @@ def simulate_polar_array():
     pd = polarData.fromPkl(filename)
 
 
-    f_options = [440]#,1000]
+    fs = 44.1e3
+    length = 100000
+    n = np.arange(10000)
+    f_options = np.int32(np.logspace(2,4, 4))*2*(fs/length)
 
     # pd.plotAngle(90)
 
+    f_1 = f_options[0]
+    f_2 = f_options[2]
+    c = 343e3
+    d_1 = c/(2*f_1)
+    d_2 = c/(2*f_2)
+
     # position in mm
     mic_1 = Microphone(pd, [0,0])
-    mic_2 = Microphone(pd, [390, 0])
-    mic_3 = Microphone(pd, [100, 230])
+    mic_2 = Microphone(pd, [d_1, 0])
+    mic_3 = Microphone(pd, [0, d_2])
 
-    mic_array = MicrophoneArray([mic_1, mic_2])#, mic_3])
-    mic_array.visualize()
+    mic_array = MicrophoneArray([mic_1, mic_2])
+    # mic_array = MicrophoneArray([mic_1, mic_2, mic_3])
 
-    fs = 44.1e3
-    n = np.arange(10001)
+
+    plt.figure(2)
 
     for f_test in f_options:
 
         sin_wave = np.sin(n*(2*np.pi)*(f_test/fs))
-        sin_wave = audioSample(sin_wave, type="t", Fs=fs)
+        sin_wave = 2/length*audioSample(sin_wave, type="t", Fs=fs)
+        # sin_wave.hanning()
 
 
-        thetas = np.array(list(range(0, 361, 5)))
+        thetas = np.array(list(range(0, 361, 2)))
         mags = []
 
         for theta in thetas:
 
-            result = mic_array.apply(sin_wave, theta)
-            result.toTime()
+            print(f_test, theta)
 
-            # result.plot()
-            mags.append(max(result))
+            result = mic_array.apply(sin_wave, theta)
+
+            # sin_wave.plot(both=True) 
+            # result.plot(both=True) 
+
+            # get magnitude of the closest frequency of the result
+            result.toDb()
+            mags.append(result.getFreq([f_test])[0].real)
 
         plt.polar(thetas*np.pi/180, mags)
 
-    plt.legend(f_options)
-    plt.show()
+    plt.legend(f_options, loc = "upper left")
+    mic_array.visualize()
 
 
 
 
 if __name__ == "__main__":
     # test_mic_apply()
-    test_xy()
+    # test_xy()
     # simulate_polar_array()
+    simulate_polar_1mic()

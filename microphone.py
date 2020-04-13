@@ -2,7 +2,7 @@ import numpy as np
 from polarData import polarData
 from pythonAudioMeasurements.audioSample import audioSample
 import matplotlib.pyplot as plt
-from scipy.signal import fftconvolve as convolve
+from scipy.signal import convolve
 import cmath
 
 
@@ -45,9 +45,16 @@ class Microphone:
         experienced at the origin
 
         ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
         theta			| angle of approach (degrees)
         ---------------------------------------------------------------------
         
+        ---------------------------------------------------------------------
+        OUTPUTS
+        ---------------------------------------------------------------------
+        (float) distance from the microphone to the original at angle theta
+        ---------------------------------------------------------------------
         """
 
         # conversion to radians
@@ -70,7 +77,8 @@ class Microphone:
         ---------------------------------------------------------------------
         INPUTS
         ---------------------------------------------------------------------
-        signal			| (audioSample) the input signal 
+        signal			| (audioSample) the input signal - must be at same
+                        | sampling frequency as used to collect self.polar
         ---------------------------------------------------------------------
         theta			| (float, int) angle of approach (degrees)
         ---------------------------------------------------------------------
@@ -82,8 +90,8 @@ class Microphone:
         ---------------------------------------------------------------------
        """ 
 
-        mic = self.apply_microphone(signal, theta)
-        return self.apply_xy(mic, theta)
+        mic = self.apply_xy(signal, theta)
+        return self.apply_microphone(mic, theta)
 
 
     def apply_xy(self, signal, theta):
@@ -108,88 +116,63 @@ class Microphone:
         ---------------------------------------------------------------------
         """
 
+        # used to preserve input signal type without creating new audioSample
+        original_type = signal.type
+
         # get the component frequencies
         signal.toFreq()
 
-        signal.plot(both=True)
-
         freqs = signal.f()
 
-        print(freqs)
-
-        # time-domain shift
+        # time-domain shift and resulting phase shift (func of freq)
         delta_t =  self.normal_origin_dist(theta)/self.c
-
-
-        # the resulting phase shift
         phase_shift = np.exp(-1j*2*np.pi*freqs*delta_t)
 
         result = audioSample(signal*phase_shift, type="f",Fs=signal.fs) 
 
-
-        signal.toTime()
-
-        return result
-
-    def apply_xy_conv(self, signal, theta):
-
-        """
-        same as apply_xy but implemented in the time domain
-        """
-
-        # get the component frequencies
-        signal.toTime()
-
-        signal.plot(both=True)
-
-
-        # time-domain shift
-        delta_t =  self.normal_origin_dist(theta)/self.c
-        delta_n = int(delta_t*signal.fs)
-        shift_t = np.zeros(len(signal))
-        shift_t[delta_n] = 1
-
-
-        result = audioSample(convolve(signal, shift_t, "same"), type="t",Fs=signal.fs)
-
-
-        signal.toTime()
+        # set input signal type back to original value
+        signal.setType(original_type)
 
         return result
+
 
     def apply_microphone(self, signal, theta, f_targ=None):
         """
-        the input signal must have been taken at the same sample rate
-        for this to work. 
+        Applies the transform associated with the a signal entering a mic at
+        a given angle
+
+        ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
+        same as Microphone.apply(self, signal, theta)
+        ---------------------------------------------------------------------
+
+        ---------------------------------------------------------------------
+        OUTPUTS
+        ---------------------------------------------------------------------
+        (audioSample) resulting from the described transformation
+        ---------------------------------------------------------------------
         """
 
         # get the frequency response of the microphone at the given theta
         mic_response = self.polar.getData(theta)
         mic_response.removeDCOffset()
 
-        # if f_targ:
-        #     for i, f in enumerate(mic_response.f()):
-        #         if f >= f_targ: 
-        #             mic_response.toFreq()
-                    # print(f, abs(mic_response[i]))
-                    # break
-
         # must have signal of same fs as mic response
         assert mic_response.fs == signal.fs, "your input signal must have the same " + \
         "sampling frequency. the microphone has fs: %d, and your signal as %d"%(mic_response.fs, signal.fs)
 
-        
+        # to preserve the original type of the input signal
+        original_type = signal.type
+
+        # apply filter with time-domain convolution
         signal.toTime()
         mic_response.toTime()
-
         result = convolve(signal, mic_response, "same")
 
-        # print(max(signal))
-        # print(np.average(signal))
-        # print(sum(signal))
-        # print(max(result))
-        # print(np.average(result))
-        # print(sum(result))
+        # set signal back to original type
+        signal.setType(original_type)
+
 
     
         return audioSample(result, Fs=signal.fs) 

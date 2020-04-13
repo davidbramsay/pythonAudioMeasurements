@@ -173,6 +173,42 @@ class audioSample(object):
         for val in self._data:
             yield val
 
+    def getFreq(self, freqs):
+        """
+        Gets the value of the audioSample at present frequencies closest to 
+        the ones provided
+
+        ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
+        freqs			| (iterable) desired frequencies
+        ---------------------------------------------------------------------
+
+        ---------------------------------------------------------------------
+        OUTPUTS
+        ---------------------------------------------------------------------
+        (np.array) values of the self in the current mode of given 
+        frequencies
+        ---------------------------------------------------------------------
+        """
+
+
+        assert self.type in ("f", "db"), "cannot get a frequency value for time domain wave form"
+
+        results = np.zeros(len(freqs), dtype=complex)
+
+        possible_freqs = self.f()
+
+        for i,freq in enumerate(freqs):
+            # find the index of the minimum difference
+            differences = np.abs(possible_freqs-freq)
+            index = np.argmin(differences)
+
+            results[i] = self[index]
+
+        return results
+
+
 
     def update(self):
         variables = vars(self).keys()
@@ -206,9 +242,18 @@ class audioSample(object):
     def data(self, value):
         raise Exception('Prefer creating a new audiosample to setting data explicitly, this is a bad idea.')
 
-
     @type.setter
     def type(self, value, verbose=False):
+        """
+        Traditional setter for type variable
+        """
+        self.setType(value, verbose=verbose)
+
+
+    def setType(self, value, verbose=False):
+        """
+        Traditional setter for ~type~ variable
+        """
         assert (value.lower() in ("t", "f", "db")), "type invalid, use t, f, or db"
 
         new_type = value.lower()
@@ -525,13 +570,21 @@ class audioSample(object):
     def hanning(self):
         #apply hanning window to the time domain signal
         def hannIt():
-            self.data = self.data * np.hanning(self._tLength)
+            self._data = self._data * np.hanning(self._tLength)
 
         self.applyInDomain('t', hannIt)
 
 
     def zeroPadStart(self, length=64):
-        #apply zero pad to the beginning of the time domain signal
+        """
+        Apply zero pad to the START of the time domain signal
+
+        ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
+        length			| (int) in samples to be added
+        ---------------------------------------------------------------------
+        """
         def padIt():
             self._data = np.concatenate([np.zeros(length), self._data])
             self._tLength = len(self._data)
@@ -540,7 +593,15 @@ class audioSample(object):
 
 
     def zeroPadEnd(self, length=64):
-        #apply zero pad to the end of the time domain signal
+        """
+        Apply zero pad to the END of the time domain signal
+
+        ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
+        length			| (int) in samples to be added
+        ---------------------------------------------------------------------
+        """
         def padIt():
             self._data = np.concatenate([self._data, np.zeros(length)])
             self._tLength = len(self.data)

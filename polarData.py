@@ -47,12 +47,86 @@ Done:
 
 class polarData:
 
-    def __init__(self, angles=[], audioData=[], fs=44100):
+    def __init__(self, angles=[], audioData=dict(), fs=44100):
 
         self._fs_rm  = []
         self.fs = fs
         self.angles = angles
         self.audioData = audioData
+
+
+    def copy(self):
+        """
+        Returns a deep copy of this polarData instance.
+        """
+
+        audioDataCopy = dict()
+        for theta, data in self.audioData:
+            audioDataCopy[theta] = data.copy()
+
+        return polarData(angles=self.angles.copy(), audioData=audioDataCopy, fs=self.fs)
+
+
+    def addTo(self, pd):
+        """
+        Adds another polarData object to this one. Note that this operation 
+        is done in place.
+        
+        
+        ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
+        pd  			| (polarData) to be added to this instance
+        ---------------------------------------------------------------------
+        
+        """
+
+        # make sure the angles match
+        assert all([(pd.angles[i]-self.angles[i]) < 1e-8 for i in range(len(self.angles))]), \
+            "polarDatas must have the same angles to be added"
+
+        for theta in self.angles:
+            self.audioData[theta] += pd.audioData[theta]
+
+
+    def applyFilter(self, filt):
+        """
+        Applies the give filter to this polarData object in place by point-
+        wise mulitplication
+        
+        
+        ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
+        filter			| (audioSample) filter to be applied. Must have the
+                        | same length as the frequency responses in the 
+                        | this polarData object. Applies filter in current 
+                        | type (in most cases, should be `f`) to this 
+                        | instance in current type
+        ---------------------------------------------------------------------
+        
+        
+        ---------------------------------------------------------------------
+        OUTPUTS
+        ---------------------------------------------------------------------
+        modifies this objcet in place
+        ---------------------------------------------------------------------
+
+        """
+
+        assert len(self.audioData[self.angles[0]]) == len(filter), "input filter must be of same length as polarData"
+
+        # type check
+        if self.getType() != filt.type:
+            print("WARNING: filter (%s) and polarData (%s) instance are of different types~"%(filter.type, self.getType()))
+
+        # apply the filter by multiplication
+        for theta in self.audioData.keys():
+            self.audioData[theta] *= filt
+
+        
+
+
 
 
     @staticmethod
@@ -77,6 +151,8 @@ class polarData:
 
         pd.filename = filename
 
+        print(audioSample)
+
         with open(filename, "rb") as file_:
             loadedFile = pickle.load(file_, encoding="latin1")
 
@@ -86,6 +162,8 @@ class polarData:
         pd.audioData = dict(zip (pd.angles, loadedFile[0]["measurements"]))
 
         pd.assertValidData()
+
+        pd.removeDCOffset()
 
         return pd
 
@@ -118,7 +196,7 @@ class polarData:
 
         self.audioData[theta].plot(both=both)
     
-    def plotFreqs(self, freqs=[]):
+    def plotFreqs(self, freqs=[], fig=1):
         """
         Takes measured data as specified below and plots it using matplotlib
         on a polar axes
@@ -127,6 +205,8 @@ class polarData:
         measured_data (dict): contains already-measured data in the format
                             {frequency1 : [(angle1 in degrees, amplitude1), ...], ....}
         """
+
+        plt.figure(fig)
 
         # suplot on which all data will be places
         ax = plt.subplot(1, 1, 1, projection = "polar")
@@ -276,6 +356,7 @@ class polarData:
 
         return changed
 
+
     def changeFreqs(self, value, thetas=[], thetaRange=[-1,-1], freqs=[], freqRange=[], mode=None):
 
         """
@@ -303,13 +384,17 @@ class polarData:
 
         return changed
 
+    def removeDCOffset(self):
+        for theta in self.angles:
+            self.audioData[theta].removeDCOffset()
+
     def setAngle(self, theta, audioSample):
         assert theta in self.angles, "given angle not in this audioSample use audioSample.getAngles() to see a lit of containined angles"
         assert self.audioData[0].fs == audioSample.fs and len(self.audioData[0]) == len(audioSample), "all audiosamples in a polarData instance must have the same fs and length"
         self.audioData[theta] = audioSample
             
     def setType(self, _type):
-        for audioSamp in self.audioData.values(): audioSamp.type = _type
+        for audioSamp in self.audioData.values(): audioSamp.setType(_type)
 
     def getAngles(self):
         return self.angles
