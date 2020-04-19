@@ -61,7 +61,7 @@ class polarData:
         """
 
         audioDataCopy = dict()
-        for theta, data in self.audioData:
+        for theta, data in self.audioData.items():
             audioDataCopy[theta] = data.copy()
 
         return polarData(angles=self.angles.copy(), audioData=audioDataCopy, fs=self.fs)
@@ -98,7 +98,7 @@ class polarData:
         ---------------------------------------------------------------------
         INPUTS
         ---------------------------------------------------------------------
-        filter			| (audioSample) filter to be applied. Must have the
+        filt			| (audioSample) filter to be applied. Must have the
                         | same length as the frequency responses in the 
                         | this polarData object. Applies filter in current 
                         | type (in most cases, should be `f`) to this 
@@ -114,23 +114,19 @@ class polarData:
 
         """
 
-        assert len(self.audioData[self.angles[0]]) == len(filter), "input filter must be of same length as polarData"
+        assert len(self.audioData[self.angles[0]]) == len(filt), "input filter must be of same length as polarData"
 
         # type check
         if self.getType() != filt.type:
-            print("WARNING: filter (%s) and polarData (%s) instance are of different types~"%(filter.type, self.getType()))
+            print("WARNING: filter (%s) and polarData (%s) instance are of different types~"%(filt.type, self.getType()))
 
         # apply the filter by multiplication
         for theta in self.audioData.keys():
             self.audioData[theta] *= filt
 
         
-
-
-
-
     @staticmethod
-    def fromPkl(filename):
+    def fromPkl(filename, pickleAsAudioSample=False):
 
 
         """
@@ -151,17 +147,35 @@ class polarData:
 
         pd.filename = filename
 
-        print(audioSample)
-
         with open(filename, "rb") as file_:
             loadedFile = pickle.load(file_, encoding="latin1")
 
-        pd.angles = loadedFile[0]["angles"] 
 
-        # dictionary mapping int value of each angle to its appropriate audioSample
-        pd.audioData = dict(zip (pd.angles, loadedFile[0]["measurements"]))
+        # use for original-style pickles as originally recorded
+        # not that this will only work if called from the 
+        # pythonAudioMeasurements directory
+        if pickleAsAudioSample: 
 
-        pd.assertValidData()
+            pd.angles = loadedFile[0]["angles"] 
+
+            # dictionary mapping int value of each angle to its appropriate audioSample
+            pd.audioData = dict(zip(pd.angles, loadedFile[0]["measurements"]))
+
+            pd.assertValidData()
+
+        # recommended way of loading
+        else:
+
+            # angles
+            pd.angles = loadedFile["angles"]
+
+            # convert the tuples to audioSamples
+            for i in range(len(loadedFile["measurements"])):
+                asTuple = loadedFile["measurements"][i]
+                loadedFile["measurements"][i] = audioSample(dataArray=asTuple[0], type=asTuple[1], Fs=asTuple[2],supress=True)
+
+            # dictionary mapping int value of each angle to its appropriate audioSample
+            pd.audioData = dict(zip(pd.angles, loadedFile["measurements"]))
 
         pd.removeDCOffset()
 
@@ -196,7 +210,7 @@ class polarData:
 
         self.audioData[theta].plot(both=both)
     
-    def plotFreqs(self, freqs=[], fig=1):
+    def plotFreqs(self, freqs=[], title="POLARDATA RESPONSE", fig=1, show=True):
         """
         Takes measured data as specified below and plots it using matplotlib
         on a polar axes
@@ -273,13 +287,15 @@ class polarData:
             # plot this set of points
             ax.plot(theta_plot, r_plot)
 
+        self.setType(oldType)
+
         # add graphic title
-        ax.set_title("POLARDATA RESPONSE AT VARIOUS FREQUENCIES")
+        ax.set_title(title)
         ax.grid(True) # turn on grid lines
         #ax.set_rticks(np.arange(0,50, 10)) # add tick marks
         ax.legend(legend, loc = "upper left") # create key
         #plt.savefig("fig_temp" + str())
-        plt.show()
+        if show: plt.show()
 
     def replaceAnglesAxis(self, thetaLower, thetaUpper, thetaAxis=0, thetas =[]):
         """
@@ -402,6 +418,8 @@ class polarData:
     def getFreq(self, theta=0):
         return self.audioData[theta].f()
 
+    def f(self): return self.getFreq()
+
     def getRemoved(self):
         return self._fs_rm
 
@@ -419,6 +437,9 @@ class polarData:
     def __getitem__(self, theta):
         return self.getData(theta)
 
+    def __setitem__(self, theta, val):
+        self.audioData[theta] = val
+
     def getType(self):
         return self.audioData[0].type
     
@@ -431,6 +452,22 @@ class polarData:
 
         difference = [abs(theta-a) for a in self.angles]
         return self.angles[difference.index(min(difference))]
+
+    def to2dArray(self):
+        """
+        Returns a 2-d numpy array of the data in this array
+
+        ---------------------------------------------------------------------
+        OUTPUTS
+        ---------------------------------------------------------------------
+        data			| (numpy.array-2d) such that data[i] contains the 
+                        | data array corresponding to angles[i]
+        ---------------------------------------------------------------------
+        """
+
+        data = np.array([self.audioData[theta].data for theta in self.angles])
+
+        return data
 
     def save(self, filename):
         with open(filename, "wb") as f:
