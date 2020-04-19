@@ -1,5 +1,5 @@
 import numpy as np
-from polarData import polarData
+from pythonAudioMeasurements.polarData import polarData
 from pythonAudioMeasurements.audioSample import audioSample
 import matplotlib.pyplot as plt
 from scipy.signal import convolve
@@ -33,6 +33,9 @@ class Microphone:
         self.polar = polar
         self.position = np.array(position)
         self.c = c
+        # whether or not the transform for the geometry has been applied in 
+        # place
+        self.angle_applied = False 
 
     def normal_origin_dist(self, theta):
         """
@@ -176,6 +179,61 @@ class Microphone:
 
     
         return audioSample(result, Fs=signal.fs) 
+
+
+    def self_apply_xy(self):
+        """
+        Apply the geometric phase shift to the polar data instance in place
+        """
+
+        # only allow for appling this transform once
+        if self.angle_applied:
+            print("The geometric transform has already bee applied to this microphone")
+            return
+
+        original_type = self.polar.getType()
+        
+        for theta in self.polar.angles:
+            self.polar[theta] = self.apply_xy(self.polar[theta], theta)
+
+
+        # convert back to the original type
+        self.polar.setType(original_type)
+
+        # indicate application
+        self.angle_applied = True
+
+    def tf_prep(self):
+        """
+        Returns data numpy arrays of the angles, frequencies and polarData 
+
+        ---------------------------------------------------------------------
+        OUTPUTS
+        ---------------------------------------------------------------------
+        angles          | (numpy.array) of the angles at which this polar 
+                        | microphone was sampled
+        ---------------------------------------------------------------------
+        freqs           | (numpy.array) of the frequencies present in these 
+                        | frequncy responces
+        ---------------------------------------------------------------------
+        response        | (numpy.array-2d) frequncy response of the mic such
+                        | response[i][j] is the magnitude of angles[i] at 
+                        | freqs[j]
+        ---------------------------------------------------------------------
+        """
+
+        # to avoid automatically applying the 
+        if self.angle_applied:
+            pd = self.polar
+        else:
+            pd = self.polar.copy()
+
+            # apply the filter in the frequency domain
+            pd.setType("f")
+            for theta in self.polar.angles:
+                self.polar[theta] = self.apply_xy(self.polar[theta], theta)
+
+        return np.array(self.polar.angles), self.polar.f(), pd.to2dArray()
 
 
 

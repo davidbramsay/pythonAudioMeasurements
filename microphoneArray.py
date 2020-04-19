@@ -1,5 +1,5 @@
 import numpy as np
-from polarData import polarData
+from pythonAudioMeasurements.polarData import polarData
 from pythonAudioMeasurements.audioSample import audioSample
 import matplotlib.pyplot as plt
 from scipy.signal import convolve

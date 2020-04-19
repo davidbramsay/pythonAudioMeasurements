@@ -87,7 +87,7 @@ class audioSample(object):
             self._tLength = dataArray._tLength
             return
 
-        self._data = dataArray
+        self._data = np.array(dataArray)
         self._fs = Fs
         self._fs_rm = set()
         assert (type.lower() in ("t", "f", "db")), "type invalid, use t, f, or db"
@@ -113,7 +113,6 @@ class audioSample(object):
         data, and rempoved frequencies arrays are deepcopied
         """
         newAudioSample = audioSample(copy.deepcopy(self._data), type=self.type, Fs=self._fs)
-        newAudioSample._fs_rm = copy.deepcopy(self._fs_rm)
         return newAudioSample
 
 
@@ -138,7 +137,6 @@ class audioSample(object):
 
 
     def __len__(self): return len(self._data)
-
 
     def __mul__(self, num):
         """
@@ -250,11 +248,26 @@ class audioSample(object):
         self.setType(value, verbose=verbose)
 
 
+    def toStorageTuple(self):
+        """
+        Convert audioSample to format conducive to external storage. this is 
+        in the form of a tuple with three entries containing the audioSample 
+        data, type and sampling frequency
+
+        ---------------------------------------------------------------------
+        (tuple) containing the data and metadata for this audioSample
+        ---------------------------------------------------------------------
+        
+        """
+
+        return (tuple(self.data), self.type, self.fs)
+
+
     def setType(self, value, verbose=False):
         """
         Traditional setter for ~type~ variable
         """
-        assert (value.lower() in ("t", "f", "db")), "type invalid, use t, f, or db"
+        assert (value.lower() in ("t", "f", "db")), "type, '%s' invalid, use t, f, or db"%value
 
         new_type = value.lower()
         current_type = self._type
@@ -327,10 +340,8 @@ class audioSample(object):
             raise TypeError("instance.type is invalid!")
 
 
-    def plot(self, both=False):
+    def plot(self, both=False, fig=1, show=True, figtitle=""):
         #plot the signal in the current domain
-
-        fig = plt.subplot(1,1,1)
 
         if both:
             fig = plt.subplot(2,1,1)
@@ -354,8 +365,6 @@ class audioSample(object):
             # gives space for axis labels
             plt.subplots_adjust(hspace=.75) 
 
-            plt.show()
-
             # convert type back to whatever it was
             self.type = _type
 
@@ -366,7 +375,6 @@ class audioSample(object):
             plt.grid(True)
             plt.xlabel('time (s)')
             plt.ylabel('magnitude')
-            plt.show()
 
         elif (self._type == "f"):
             self.toDb()
@@ -375,7 +383,6 @@ class audioSample(object):
             plt.grid(True)
             plt.xlabel('freq (Hz)')
             plt.ylabel('dBFS')
-            plt.show()
             self.toFreq()
 
         else:
@@ -384,8 +391,9 @@ class audioSample(object):
             plt.grid(True)
             plt.xlabel('freq (Hz)')
             plt.ylabel('dBFS')
-            plt.show()
 
+        # fig.suptitle(figtitle)
+        if show: plt.show()
 
 
     def PDF(self, ac_couple=False):

@@ -5,6 +5,10 @@ from pythonAudioMeasurements.microphone import Microphone
 from pythonAudioMeasurements.microphoneArray import MicrophoneArray
 import matplotlib.pyplot as plt
 from scipy.signal import convolve
+import tensorflow as tf
+
+
+filename = "/home/terrasa/UROP/polar-measurement/data/19_Jan15_fixedpkls/spv1840.pkl" 
 
 
 def test_mic_apply():
@@ -189,10 +193,40 @@ def simulate_polar_array():
     mic_array.visualize()
 
 
+def test_tf_prep():
+    
+    pd = polarData.fromPkl(filename)
+
+    mic = Microphone(pd, (50,100))
+
+    mic.polar[30].plot(both=True)
+    
+    mic.self_apply_xy()
+
+    mic.polar[30].plot(both=True)
+
+    angles, freqs, data = mic.tf_prep()
+
+    print(angles)
+    print(freqs)
+    print(data)
+
+    angles = tf.constant(angles)
+    freqs = tf.constant(freqs)
+    data = tf.constant(data)
+
+    print(angles)
+    print(freqs)
+    print(data)
+
+
+
+
 
 
 if __name__ == "__main__":
     # test_mic_apply()
     # test_xy()
     # simulate_polar_array()
-    simulate_polar_1mic()
+    # simulate_polar_1mic()
+    test_tf_prep()
