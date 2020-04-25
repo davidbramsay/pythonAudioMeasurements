@@ -1,6 +1,6 @@
+
 """
 Wrapper for atoring polar data taken of a microphone along with metadata about the experiment
-
 @author: Tony Terrasa
 """
 from __future__ import print_function
@@ -22,18 +22,10 @@ elif sys.version_info[0] >= 3:
 #sys.path.append('../')
 
 """
-
 To do:
-
 > generate a polar plot for the given data
     > inputs - frequencies to be shown - this shoul dhave some set of default values
-
 > considering changing the behavior of get_item to output the data raray from audioSample
-
-
-
-
-
 Done:
 > replace angle in one place with data from another reflected across some axis
 > change or remove frequencies in any format for all angles
@@ -41,7 +33,6 @@ Done:
 > save the current polarData instance to a pickle (usde to save the alterations that have been made)
 > change frequency information for a specific angle
 > change frequency informaiton for all angles
-
 """
 
 
@@ -111,7 +102,6 @@ class polarData:
         ---------------------------------------------------------------------
         modifies this objcet in place
         ---------------------------------------------------------------------
-
         """
 
         assert len(self.audioData[self.angles[0]]) == len(filt), "input filter must be of same length as polarData"
@@ -131,10 +121,8 @@ class polarData:
 
         """
         loads in data from polarPlot
-
         Args: 
         filename (str): path to pickled file from polarPlot
-
         Instance variables:
         self.filename = the given file location at the creation of the object
         self.angles = list of all the angles for which data was collected
@@ -214,7 +202,6 @@ class polarData:
         """
         Takes measured data as specified below and plots it using matplotlib
         on a polar axes
-
         Args:
         measured_data (dict): contains already-measured data in the format
                             {frequency1 : [(angle1 in degrees, amplitude1), ...], ....}
@@ -301,7 +288,6 @@ class polarData:
         """
         Replace the data contained in (thetaLower, thetaUpper) (inclusive) with symmetric data
         reflected over thetaAxis
-
         thetaLower (int): lower bound for the theta range to reflect
         thetaUpper  (int): upper bound for the theta rang to reflect
         thetaAxis (int - default=0): axis about which to reflect the given angle 
@@ -343,14 +329,11 @@ class polarData:
         Uses the audioSample.changeFreqs(self, value, freqs=[], freqRange=[-1,-1], dbOnly=False)
         to adjust values of specifed frequencies within the data at all angles. Autimatically 
         changes data to dB for change and then converts back to original type. 
-
         mode (str): 
             > if "f" - input value is in complex amplitude - converts value to polar coordinates before
               changing
             > if "db-only" - input is meant to effect the magnitude of a frequency only (not the phase)
             > if None, it assumes input value is given in db format
-
-
         Returns:
          > frequencies changed on this pass through the audioSamples
         """
@@ -378,8 +361,6 @@ class polarData:
         """
         changes the frequencies of the audioSamples at the given angles, which can be input in exact angles or
         can be input as a range
-
-
         if the no thetas nor a range are given, the changes will be applied to the audioSamples at all thetas
         """
 
@@ -456,7 +437,6 @@ class polarData:
     def to2dArray(self):
         """
         Returns a 2-d numpy array of the data in this array
-
         ---------------------------------------------------------------------
         OUTPUTS
         ---------------------------------------------------------------------
@@ -476,6 +456,3 @@ class polarData:
 
 
             
-
-        
-

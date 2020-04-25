@@ -85,6 +85,7 @@ class audioSample(object):
             self._type = dataArray.type
             self._fs = dataArray.fs
             self._tLength = dataArray._tLength
+            self.freqs = np.linspace(0, self._fs/2, self._tLength//2 + 1)
             return
 
         self._data = np.array(dataArray)
@@ -104,6 +105,8 @@ class audioSample(object):
                 "it will be assumed that the time domain " +
                 "length of the signal is 2*len(data)-1 ")
 
+        self.freqs = np.linspace(0, self._fs/2, self._tLength//2 + 1)
+
 
     def copy(self):
         """
@@ -112,7 +115,7 @@ class audioSample(object):
 
         data, and rempoved frequencies arrays are deepcopied
         """
-        newAudioSample = audioSample(copy.deepcopy(self._data), type=self.type, Fs=self._fs)
+        newAudioSample = audioSample(copy.deepcopy(self._data), type=self.type, Fs=self._fs, supress=True)
         return newAudioSample
 
 
@@ -121,11 +124,7 @@ class audioSample(object):
         if self._type=="t":
             print("watch out, your raw data is in time units!")
 
-        try:
-            return self.freqs
-        except:
-            self.freqs = np.linspace(0, self._fs/2, self._tLength//2 + 1)
-            return self.freqs
+        return self.freqs
 
 
     def t(self):

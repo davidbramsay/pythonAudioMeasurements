@@ -59,3 +59,25 @@ class MicrophoneArray:
         plt.show()
 
 
+    def tf_prep(self):
+
+        freqs = self.microphones[0].polar.f()
+        angles = self.microphones[0].polar.angles
+        mic_responses = []
+
+        for mic in self.microphones:
+
+            angles_this_mic, freqs_this_mic, response = mic.tf_prep()
+
+            assert all(np.abs(freqs_this_mic - freqs) < 1e-10), \
+                "All microphones must have a response of the same length"
+
+            assert all(np.abs(angles_this_mic - angles) < 1e-10), \
+                "All microphones be sampled for the same angles"
+
+            mic_responses.append(response)
+
+
+        return angles, freqs, mic_responses
+
+            
