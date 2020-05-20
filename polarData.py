@@ -169,6 +169,45 @@ class polarData:
 
         return pd
 
+
+    @staticmethod
+    def from2dArray(data, angles, fs, type):
+        """
+        Make a polar data object from a 2D Array such that the data[i,j] is 
+        the magnitude of the jth value in the audio sample at the ith angle
+        
+        
+        ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
+        data    		| (numpy.array-2d) data array of responses 
+        ---------------------------------------------------------------------
+        angles          | (numpy.array) of angles present 
+        ---------------------------------------------------------------------
+        fs      		| (float) sampling frequency (Hz)
+        ---------------------------------------------------------------------
+        
+        
+        ---------------------------------------------------------------------
+        OUTPUTS
+        ---------------------------------------------------------------------
+        pd 				| (polarData) constructed from the inputs
+        ---------------------------------------------------------------------
+        
+        """
+        
+        pd = polarData(angles=angles,fs=fs)
+
+        # fill polarData
+        for i, response in enumerate(data):
+            theta = angles[i]
+            pd[theta] = audioSample(response, type, fs, supress=True)
+
+        return pd
+
+
+
+
     def assertValidData(self):
         """
         Asserts that all audioSamples are of the same sampling frequency and length (to preserve the integrity
