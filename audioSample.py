@@ -90,7 +90,6 @@ class audioSample(object):
 
         self._data = np.array(dataArray)
         self._fs = Fs
-        self._fs_rm = set()
         assert (type.lower() in ("t", "f", "db")), "type invalid, use t, f, or db"
         self._type = type.lower()
 
@@ -162,7 +161,6 @@ class audioSample(object):
     __rmul__ = __mul__
 
 
-
     def __getitem__(self, index):
         return self.data[index]
 
@@ -212,7 +210,6 @@ class audioSample(object):
         if "_type" not in variables: self._type = vars(self)["type"]
         if "_data" not in variables: self._data = vars(self)["data"]
         if "_fs" not in variables: self._fs = vars(self)["fs"]
-        if "_fs_rm" not in variables: self._fs_rm = set()
 
 
     @property
@@ -226,14 +223,9 @@ class audioSample(object):
     @property
     def type(self): return self._type
 
-    @property
-    def removed(self): return self._fs_rm
-
-
     @fs.setter
     def fs(self, value):
         raise Exception('NOT IMPLEMENTED: Changing Fs requires intelligent upsampling/decimation.')
-
 
     @data.setter
     def data(self, value):
@@ -289,6 +281,9 @@ class audioSample(object):
 
 
     def toTime(self, verbose=False):
+        """
+        Convert to time domain in place
+        """
         if (self._type == "f"):
             self._data = np.fft.irfft(self._data, self._tLength)
             self._type = "t"
@@ -305,6 +300,9 @@ class audioSample(object):
 
 
     def toFreq(self, verbose=False):
+        """
+        Convert to frequency domain in place
+        """
         if (self._type == "t"):
             self._data = np.fft.rfft(self._data)
             self._type = "f"
@@ -322,6 +320,9 @@ class audioSample(object):
 
 
     def toDb(self, verbose=False):
+        """
+        Convert to Db (mag/phase) domain in place
+        """
         if (self._type == "f"):
             mag = 20*np.log10(np.abs(self._data))
             phase = np.angle(self._data)
@@ -340,7 +341,24 @@ class audioSample(object):
 
 
     def plot(self, both=False, fig=1, show=True, figtitle=""):
-        #plot the signal in the current domain
+        """
+
+        Plot signal in the current domain OR plot both time domain and 
+        Db domain (frequency response). ~show~ flag allows for plotting
+        at multiple stages in a process and showing all figures at the end
+        
+        
+        ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
+        both    		| (bool) whether to plot both time and Db domain
+        ---------------------------------------------------------------------
+        fig     		| (int) which plt figure to plot on
+        ---------------------------------------------------------------------
+        show      		| (bool) whether to run plot.show() after plotting 
+        ---------------------------------------------------------------------
+        
+        """
 
         if both:
             fig = plt.subplot(2,1,1)
@@ -391,7 +409,6 @@ class audioSample(object):
             plt.xlabel('freq (Hz)')
             plt.ylabel('dBFS')
 
-        # fig.suptitle(figtitle)
         if show: plt.show()
 
 
@@ -433,20 +450,39 @@ class audioSample(object):
         """
         Changes data values for given frequencies. 
         
-        Frequencies can be given as discrete frequencies or as a range. If given both descrete
-        values and a range are given both sets of frequencies will be adjusted. If a frequency is 
-        neither in the signal nor within the given range, it will be ignored
+        Frequencies can be given as discrete frequencies or as a range. If 
+        given both descrete values and a range are given both sets of 
+        frequencies will be adjusted. If a frequency is neither in the signal 
+        nor within the given range, it will be ignored.
 
-        Data in type "f" cannot be set to 0. 
-
-        If given value is floating point 0, then it will be counted as removing that frequency
-
-
-
+        Data frequency domain cannot be set to 0. If given value is floating 
+        point 0, then it will be counted as removing that frequency.
+        
+        ---------------------------------------------------------------------
+        INPUTS
+        ---------------------------------------------------------------------
+        value           | (int, float, complex, str) set value if "rm" the 
+                        | frequency magnitude will be set to floating point 0
+        ---------------------------------------------------------------------
+        freqs           | (list) of frequencies to be changes
+        ---------------------------------------------------------------------
+        freqRange       | (list) [freq_min, freq_max] to be altered
+        ---------------------------------------------------------------------
+        dbOnly          | (bool) flag for changing just the magnitude of the 
+                        | signal, preserving phase
+        ---------------------------------------------------------------------
+        
+        
+        ---------------------------------------------------------------------
+        OUTPUTS
+        ---------------------------------------------------------------------
+        (list) of frequencies at which the audioSample was altered
+        ---------------------------------------------------------------------
+        
 
         Args:
         value (int, float, complex, str): new data value for given frequency
-            > using the "rm" value will set that frequency amplitude equal to 0
+            > using the "rm" value will eliminate that frequency amplitude equal to 0
             > can be entered as real number or complex
         freqs (int, float, list): discrete frequencies to be altered
         freqRange (list): first two indexes used as lower bound and upper bound respectively. 
@@ -500,17 +536,13 @@ class audioSample(object):
                     self._fs_rm.add(f)
                     
 
-                # adjust mag, preserve phase
+                # adjust mag, preserve phase if setting just the magnitude
                 if dbOnly: 
                     set_value = complex(set_value.real, self._data[i].imag) 
                     
                 self._data[i] = set_value    
 
         return changed    
-
-            
-
-
 
     def normalize(self):
         #normalize to [-1,1] for time data and 0dBFS for dB data

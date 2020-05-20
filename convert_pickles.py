@@ -1,13 +1,23 @@
+"""
+
+When microphone measurements where initially taken, the audioSamples
+where stored in a pickle in such a way that they could not be 
+reloaded outside the pythonAudioMeasurements directory. This file
+corrects that, storing all of the data in pure Python formats
+
+"""
 import numpy as np
 import pickle
 from pythonAudioMeasurements.audioSample import audioSample
 from pythonAudioMeasurements.polarData import polarData
 import os
 
-CONVERT = True
-COMPARE = False
+# whether to save the converted objects
+CONVERT = True 
 
-
+# whether to compare the two representations of the same audioSample
+# which should be the same
+COMPARE = False 
 
 directory = "/home/terrasa/UROP/polar-measurement/data/19_Jan15" 
 
@@ -23,11 +33,16 @@ for filename in os.listdir(directory):
     print(full_path)
     print(full_mod_path)
 
+    # ensure that this is a pickle object that can be loaded
     if extension != "pkl":
         print("not a pickle, moving on")
         continue
 
 
+    # some sessions of collecting data had a baseline for the 
+    # microphone and the room collected. These were stored 
+    # pickles as just one audioSample and had to be converted 
+    # differently
     if filename[:4] == "meas":
         with open(full_path, "rb") as file_:
             loadedFile = pickle.load(file_, encoding="latin1")
@@ -38,9 +53,11 @@ for filename in os.listdir(directory):
         continue
 
     with open(full_path, "rb") as file_:
+        # dictionary with "measurements" -> [list of audioSamples]
         loadedFile = pickle.load(file_, encoding="latin1")[0]
 
-    # print(loadedFile)
+    # change the value stored for the key "measurements" to a list
+    # of "storagee tuples" as specified in audioSample
     m = loadedFile["measurements"]
     new_measurements = []
 
@@ -61,8 +78,6 @@ for filename in os.listdir(directory):
 
         tester_asamp.plot(both=True)
 
-
-    # print(loadedFile["measurements"])
 
     if not CONVERT: continue
 

@@ -82,7 +82,7 @@ class polarData:
 
     def applyFilter(self, filt):
         """
-        Applies the give filter to this polarData object in place by point-
+        Applies the give filter to this polarData object IN PLACE by point-
         wise mulitplication
         
         
@@ -96,12 +96,6 @@ class polarData:
                         | instance in current type
         ---------------------------------------------------------------------
         
-        
-        ---------------------------------------------------------------------
-        OUTPUTS
-        ---------------------------------------------------------------------
-        modifies this objcet in place
-        ---------------------------------------------------------------------
         """
 
         assert len(self.audioData[self.angles[0]]) == len(filt), "input filter must be of same length as polarData"

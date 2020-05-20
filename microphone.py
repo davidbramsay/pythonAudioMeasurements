@@ -1,3 +1,8 @@
+"""
+
+Class for representing and manipulating the characteristics of a microphone
+
+"""
 import numpy as np
 from pythonAudioMeasurements.polarData import polarData
 from pythonAudioMeasurements.audioSample import audioSample
@@ -12,19 +17,17 @@ class Microphone:
 
     def __init__(self, polar, position=[0,0], c=343e3):
         """
-        position should be a vector x,y of the relative positoin
-        from the specified origin
-        position, c must have the same distance units, defaults assume mm
 
+        Wrapper around the polar and location data of a microphone
 
         ---------------------------------------------------------------------
-        polar           | polarData object containing the characteristic data 
-                        | for the mic
+        polar           | (polarData) the characteristic data for the mic
         ---------------------------------------------------------------------
-        position        | list [x,y] relative to the origin see units below
+        position        | (list) [x,y] relative to the origin see units below
         ---------------------------------------------------------------------
-        c               | speed of sound in the given medium - should be same 
-                        | units as ~position~ (assumed to be mm/s)
+        c               | (float) speed of sound in the given medium 
+                        | - should be same units as ~position~ 
+                        | (assumed to be mm/s)
         ---------------------------------------------------------------------
         
         
@@ -39,6 +42,7 @@ class Microphone:
 
     def normal_origin_dist(self, theta):
         """
+
         if a plane wave is traveling in at an angle theta, 
         calculates the distance from the origin that the microphone is 
         normal to sound wave
@@ -50,7 +54,7 @@ class Microphone:
         ---------------------------------------------------------------------
         INPUTS
         ---------------------------------------------------------------------
-        theta			| angle of approach (degrees)
+        theta			| (int) angle of approach (degrees)
         ---------------------------------------------------------------------
         
         ---------------------------------------------------------------------
@@ -58,6 +62,7 @@ class Microphone:
         ---------------------------------------------------------------------
         (float) distance from the microphone to the original at angle theta
         ---------------------------------------------------------------------
+
         """
 
         # conversion to radians
@@ -70,8 +75,8 @@ class Microphone:
 
 
     def apply(self, signal, theta):
-
         """
+
         Return the audioSample that results from the ~signal~ approaching as  
         a plane wave at angle ~theta~ from the origin
 
@@ -91,6 +96,7 @@ class Microphone:
         ---------------------------------------------------------------------
         (audioSample) resulting from the described transformation
         ---------------------------------------------------------------------
+
        """ 
 
         mic = self.apply_xy(signal, theta)
@@ -98,8 +104,8 @@ class Microphone:
 
 
     def apply_xy(self, signal, theta):
-
         """
+
         Applies the phase shift to a signal resluting from its (x,y)
         position, effectively collapses the microphone to the origin
 
@@ -117,6 +123,7 @@ class Microphone:
         ---------------------------------------------------------------------
         (audioSample) resulting from the described transformation
         ---------------------------------------------------------------------
+
         """
 
         # used to preserve input signal type without creating new audioSample
@@ -183,7 +190,10 @@ class Microphone:
 
     def self_apply_xy(self):
         """
-        Apply the geometric phase shift to the polar data instance in place
+        
+        Apply the phase shift to the polar data instance IN PLACE corresponding to the 
+        displacement from the origin
+
         """
 
         # only allow for appling this transform once
@@ -205,6 +215,7 @@ class Microphone:
 
     def tf_prep(self):
         """
+
         Returns data numpy arrays of the angles, frequencies and polarData 
 
         ---------------------------------------------------------------------
@@ -220,6 +231,7 @@ class Microphone:
                         | response[i][j] is the magnitude of angles[i] at 
                         | freqs[j]
         ---------------------------------------------------------------------
+
         """
 
         # to avoid automatically applying the 
