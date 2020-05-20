@@ -25,13 +25,6 @@ class MicrophoneArray:
         microphones		| (list) of Microphone objects
         ---------------------------------------------------------------------
         
-        
-        ---------------------------------------------------------------------
-        OUTPUTS
-        ---------------------------------------------------------------------
-        				| () 
-        ---------------------------------------------------------------------
-        
         """
 
         self.microphones = microphones
@@ -117,6 +110,9 @@ class MicrophoneArray:
 
         plt.figure(fig)
         plt.plot(x, y, "b*")
+        plt.title("Microphone Locations")
+        plt.xlabel("X")
+        plt.xlabel("Y")
 
         plt.show()
 
